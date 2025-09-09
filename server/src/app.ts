@@ -6,6 +6,8 @@ import userRouter from "./modules/user/user.routes";
 
 const PORT = process.env.PORT || 3000;
 
+console.log(`\nIniciando o servidor na porta ${PORT}... 😁\n`)
+
 const app = express();
 app.use(express.json());
 
@@ -21,10 +23,10 @@ app.use("/auth", authRouter);
 
 expressListRoutes(authRouter, { prefix: "/auth", forceUnixPathStyle: true });
 
-app.use("/users", userRouter);
+app.use("/funcionario", userRouter);
 
-expressListRoutes(userRouter, { prefix: "/users", forceUnixPathStyle: true });
+expressListRoutes(userRouter, { prefix: "/funcionario", forceUnixPathStyle: true });
 
 app.listen(PORT, () => {
-    console.log(`\nApp executando na porta ${PORT} `)
+    console.log(`\nApp executando na porta ${PORT} 🚀🆗✅`)
 });

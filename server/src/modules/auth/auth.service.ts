@@ -7,7 +7,7 @@ import { SignupDto } from "./dto/signup.dto";
 const prisma = new PrismaClient();
 
 export const signup = async (dto: SignupDto) => {
-    const existingUser = await prisma.admin.findUnique({
+    const existingUser = await prisma.funcionario.findUnique({
         where: { email: dto.email },
     });
 
@@ -15,13 +15,16 @@ export const signup = async (dto: SignupDto) => {
         throw new Error("Email já está em uso");
     }
 
-    const hashedPassword = await hashPassword(dto.password);
+    const hashedPassword = await hashPassword(dto.senha);
 
-    const newUser = await prisma.admin.create({
+    const newUser = await prisma.funcionario.create({
         data: {
             email: dto.email,
-            password: hashedPassword,
-            name: dto.name,
+            numero_identificacao: dto.numero_identificacao,
+            senha: hashedPassword,
+            nome: dto.nome,
+            categoria: dto.categoria,
+            estado: false,
         },
     });
 
@@ -31,14 +34,16 @@ export const signup = async (dto: SignupDto) => {
         { expiresIn: "1h" }
     );
 
+    const { id, ...sanitizedUser } = newUser;
+
     return {
         token,
-        user: { id: newUser.id, email: newUser.email, name: newUser.name },
+        user: { ...sanitizedUser },
     };
 };
 
 export const login = async (dto: LoginDto) => {
-    const user = await prisma.admin.findUnique({
+    const user = await prisma.funcionario.findUnique({
         where: { email: dto.email },
     });
 
@@ -46,7 +51,7 @@ export const login = async (dto: LoginDto) => {
         throw new Error("Usuário não encontrado");
     }
 
-    const isValid = await comparePassword(dto.password, user.password);
+    const isValid = await comparePassword(dto.senha, user.senha);
     if (!isValid) {
         throw new Error("Credenciais inválidas");
     }
@@ -57,5 +62,7 @@ export const login = async (dto: LoginDto) => {
         { expiresIn: "1h" }
     );
 
-    return { token, user: { id: user.id, email: user.email, name: user.name } };
+    const { id, ...sanitizedUser } = user;
+
+    return { token, user: { ...sanitizedUser } };
 };
