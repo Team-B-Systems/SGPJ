@@ -7,5 +7,5 @@ export interface SignupDto {
     senha: string,
     categoria: string,
     estado: boolean,
-    role: Role
+    role: Role,
 }

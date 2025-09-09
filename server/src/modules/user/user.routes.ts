@@ -1,13 +1,10 @@
-import { Router, Response } from "express";
-import { AuthRequest, authMiddleware } from "../../middlewares/auth.middleware";
+import { Router } from "express";
+import { editProfile, getProfile } from "./user.controller";
+import { authMiddleware } from "../../middlewares/auth.middleware";
 
 const router = Router();
 
-router.get("/profile", authMiddleware, (req: AuthRequest, res: Response) => {
-  res.json({
-    message: "Perfil do utilizador",
-    user: req.user,
-  });
-});
+router.get("/perfil", authMiddleware, getProfile);
+router.patch("/perfil", authMiddleware, editProfile);
 
-export default router
+export default router;

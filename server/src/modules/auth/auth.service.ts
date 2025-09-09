@@ -8,10 +8,10 @@ const prisma = new PrismaClient();
 
 export const signup = async (dto: SignupDto) => {
     const existingUser = await prisma.funcionario.findUnique({
-            where: { email: dto.email}
+            where: { email: dto.email },
         });
     
-        if(existingUser){
+        if (existingUser){
              throw new Error("Email já está em uso");
         }
     
@@ -28,8 +28,10 @@ export const signup = async (dto: SignupDto) => {
                 role: dto.role
             }
         });
+  
+        const { id, ...sanitizedUser } = newUser;
     
-        return newUser;
+        return sanitizedUser;
 };
 
 export const login = async (dto: LoginDto) => {
@@ -52,5 +54,7 @@ export const login = async (dto: LoginDto) => {
         { expiresIn: "5d" }
     );
 
-    return { token, user: { id: user.id, email: user.email, nome: user.nome } };
+    const { id, ...sanitizedUser } = user;
+
+    return { token, user: { ...sanitizedUser } };
 };
