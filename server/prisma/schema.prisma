@@ -10,6 +10,17 @@
   model Admin {
     id       Int    @id @default(autoincrement())
     email    String @unique
-    password String
-    name     String
+    senha String
+    nome     String
+    telefone Int?
+  }
+
+  model Funcionario{
+    id       Int    @id @default(autoincrement())
+    nome String
+    numero_identificacao String
+    email String @unique
+    categoria String
+    senha String
+    estado Boolean
   }
