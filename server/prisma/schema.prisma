@@ -7,20 +7,20 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Admin {
-  id       Int    @id @default(autoincrement())
-  email    String @unique
-  senha    String
-  nome     String
-  telefone Int?
-}
+ enum Role{
+  Admin
+  Chefe
+  Funcionário
+ }
 
-model Funcionario {
-  id                   Int     @id @default(autoincrement())
-  nome                 String
-  numero_identificacao String
-  email                String  @unique
-  categoria            String
-  senha                String
-  estado               Boolean
-}
+  model Funcionario{
+    id       Int    @id @default(autoincrement())
+    nome String
+    numero_identificacao String
+    email String @unique
+    categoria String
+    senha String
+    estado Boolean
+    role Role
+
+  }

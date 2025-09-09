@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { comparePassword, hashPassword } from "../../utils/hash";
 import { LoginDto } from "./dto/login.dto";
@@ -8,38 +8,30 @@ const prisma = new PrismaClient();
 
 export const signup = async (dto: SignupDto) => {
     const existingUser = await prisma.funcionario.findUnique({
-        where: { email: dto.email },
-    });
-
-    if (existingUser) {
-        throw new Error("Email já está em uso");
-    }
-
-    const hashedPassword = await hashPassword(dto.senha);
-
-    const newUser = await prisma.funcionario.create({
-        data: {
-            email: dto.email,
-            numero_identificacao: dto.numero_identificacao,
-            senha: hashedPassword,
-            nome: dto.nome,
-            categoria: dto.categoria,
-            estado: false,
-        },
-    });
-
-    const token = jwt.sign(
-        { userId: newUser.id, email: newUser.email },
-        process.env.JWT_SECRET || "secret",
-        { expiresIn: "1h" }
-    );
-
-    const { id, ...sanitizedUser } = newUser;
-
-    return {
-        token,
-        user: { ...sanitizedUser },
-    };
+            where: { email: dto.email },
+        });
+    
+        if (existingUser){
+             throw new Error("Email já está em uso");
+        }
+    
+        const hashedsenha = await hashPassword(dto.senha);
+    
+        const newUser = await prisma.funcionario.create({
+            data: {
+                nome: dto.nome,
+                numero_identificacao: dto.numero_identificacao,
+                email: dto.email,
+                categoria: dto.categoria,
+                senha: hashedsenha,
+                estado: dto.estado,
+                role: dto.role
+            }
+        });
+  
+        const { id, ...sanitizedUser } = newUser;
+    
+        return sanitizedUser;
 };
 
 export const login = async (dto: LoginDto) => {
@@ -57,9 +49,9 @@ export const login = async (dto: LoginDto) => {
     }
 
     const token = jwt.sign(
-        { userId: user.id, email: user.email },
+        { userId: user.id, email: user.email, role: user.role },
         process.env.JWT_SECRET || "secret",
-        { expiresIn: "1h" }
+        { expiresIn: "5d" }
     );
 
     const { id, ...sanitizedUser } = user;
