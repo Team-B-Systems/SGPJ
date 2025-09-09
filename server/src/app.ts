@@ -1,16 +1,30 @@
 import express, { Request, Response } from "express";
+import expressListRoutes from 'express-list-routes'
+import authRouter from './modules/auth/auth.routes';
+import userRouter from "./modules/user/user.routes";
+
+
+const PORT = process.env.PORT || 3000;
 
 const app = express();
 app.use(express.json());
 
-app.get("/", (req: Request, res: Response) => {
+app.get("/", (_: Request, res: Response) => {
   res.json({
     msg: "Bem-vindo à API do SGPJ 😁",
   });
 });
 
-const PORT = process.env.PORT || 3000;
+expressListRoutes(app, { prefix: "", forceUnixPathStyle: true });
+
+app.use("/auth", authRouter);
+
+expressListRoutes(authRouter, { prefix: "/auth", forceUnixPathStyle: true });
+
+app.use("/users", userRouter);
+
+expressListRoutes(userRouter, { prefix: "/users", forceUnixPathStyle: true });
 
 app.listen(PORT, () => {
-    console.log(`App executando na porta ${PORT}`)
+    console.log(`\nApp executando na porta ${PORT} `)
 });
