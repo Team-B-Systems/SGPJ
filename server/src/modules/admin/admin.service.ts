@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import { LoginDto } from "./dto/login.dto";
 import { comparePassword, hashPassword } from "../../utils/hash";
 import jwt from "jsonwebtoken";
@@ -8,11 +8,11 @@ const prisma = new PrismaClient();
 
 export const login = async (dto: LoginDto) => {
     const user = await prisma.funcionario.findUnique({
-        where: { email: dto.email }
+        where: { email: dto.email, role: Role.Admin }
     })
 
     if (!user) {
-        throw new Error("Usuário não encontrado");
+        throw new Error("Admin não encontrado");
     }
 
     const isValid = await comparePassword(dto.senha, user.senha);
