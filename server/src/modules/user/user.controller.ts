@@ -1,4 +1,5 @@
 import { Response } from "express";
+import * as userService from "./user.service";
 import { AuthRequest } from "../../middlewares/auth.middleware";
 
 export const getProfile = async (req: AuthRequest, res: Response) => {
@@ -12,12 +13,12 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 
 export const editProfile = async (req: AuthRequest, res: Response) => {
     try {
-        const userId = req.user?.id;
+        const userId = req.user.userId;
         const dto = req.body;
         if (!userId) {
             return res.status(401).json({ error: "Utilizador não autenticado" });
         }
-        const updatedUser = await editProfile(userId, dto);
+        const updatedUser = await userService.editProfile(userId, dto);
         res.json({ user: updatedUser });
     } catch (err: any) {
         res.status(400).json({ error: err.message });
