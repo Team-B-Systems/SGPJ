@@ -1,0 +1,10 @@
+services:
+  db:
+    image: mysql:8.0.40
+    container_name: sgpj
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234567890
+      MYSQL_DATABASE: sgpj
+    ports:
+      - "9306:3306"   # host:container
