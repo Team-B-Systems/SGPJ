@@ -1,11 +1,12 @@
-import { Role } from "@prisma/client";
+import { CategoriaFuncionario, EstadoFuncionario, NomeDepartamento, Role } from "@prisma/client";
 
 export interface SignupDto {
     nome: string,
     numero_identificacao: string,
     email: string,
     senha: string,
-    categoria: string,
-    estado: boolean,
+    categoria: CategoriaFuncionario,
+    estado: EstadoFuncionario,
     role: Role,
+    nomeDepartamento: NomeDepartamento,
 }

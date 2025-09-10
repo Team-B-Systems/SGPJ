@@ -1,9 +1,9 @@
 import { PrismaClient, Role } from "@prisma/client";
 import { LoginDto } from "./dto/login.dto";
-import { comparePassword, hashPassword } from "../../utils/hash";
+import { comparePassword } from "../../utils/hash";
 import jwt from "jsonwebtoken";
 import { EditDto } from "./dto/edit.dto";
-import { SignupFuncionarioDto } from "./dto/signupfuncionario.dto";
+import ApiException from "src/common/Exceptions/api.exception";
 
 const prisma = new PrismaClient();
 
@@ -13,12 +13,12 @@ export const login = async (dto: LoginDto) => {
     })
 
     if (!user) {
-        throw new Error("Admin não encontrado");
+        throw new ApiException(401, "Credenciais inválidas");
     }
 
     const isValid = await comparePassword(dto.senha, user.senha);
     if (!isValid) {
-        throw new Error("Credenciais inválidas")
+        throw new ApiException(401, "Credenciais inválidas");
     }
 
     const token = jwt.sign(
@@ -36,7 +36,7 @@ export const perfil = async (userId: number) => {
     })
 
     if (!user) {
-        throw new Error("Usuário não encontrado");
+        throw new ApiException(404, "Utilizador não encontrado");
     }
 
     return user;
@@ -49,7 +49,7 @@ export const editarPerfil = async (userId: number, dto: EditDto) => {
     });
 
     if (!user) {
-        throw new Error("Usário não encontrado");
+        throw new ApiException(404, "Utilizador não encontrado");
     }
 
     const updateUser = await prisma.funcionario.update({
@@ -69,7 +69,7 @@ export const listarFuncionarios = async () => {
     });
 
     if (!users) {
-        throw new Error("Não existe funcionários cadastrados");
+        throw new ApiException(404, "Utilizadores não encontrados");
     }
 
 
@@ -82,7 +82,7 @@ export const pesquisarFuncionario = async (email: string) => {
     });
 
     if (!user) {
-        throw new Error("Funcionário não encontrado");
+        throw new ApiException(404, "Utilizador não encontrado");
     }
 
     return user;
