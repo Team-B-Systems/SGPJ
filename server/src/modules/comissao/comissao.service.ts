@@ -1,6 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import { EstadoComissao, PrismaClient } from "@prisma/client";
 import { comissaoDto } from "./dto/criar.dto";
 import ApiException from "../../common/Exceptions/api.exception";
+import { adicionarMembroDto } from "./dto/adicionar.dto";
 
 const prisma = new PrismaClient()
 
@@ -76,4 +77,46 @@ export const pesquisarPorId = async (comissaoId: number) => {
 
     const { id, ...sanitizedQueixa } = queixa
     return sanitizedQueixa;
+};
+
+export const adicionarMembro = async (comissaoId: number, dto: adicionarMembroDto) => {
+    const funcionario = await prisma.funcionario.findFirst({
+        where: { email: dto.email }
+    })
+
+    if (!funcionario) {
+        throw new ApiException(404, "O funcionário não encontrado");
+    }
+
+    const comissaoMembro = await prisma.comissaoFuncionario.findFirst({
+        where: {
+            comissaoId: comissaoId, funcionarioId: funcionario.id
+        }
+    });
+
+    if (comissaoMembro) {
+        throw new ApiException(400, "O membro já faz parte desta comissão");
+    }
+
+    const comissao = await prisma.comissao.findUnique({
+        where: { id: comissaoId }
+    })
+
+    if (!comissao) {
+        throw new ApiException(404, "")
+    }
+
+    if (comissao.estado !== EstadoComissao.Aprovada) {
+        throw new ApiException(400, "O membro não pode fazer parte de uma comissão dispensada");
+    }
+
+    const addMembro = await prisma.comissaoFuncionario.create({
+        data: {
+            comissaoId: comissao.id,
+            funcionarioId: funcionario.id,
+            papel: dto.papel
+        }
+    });
+
+    return addMembro;
 };
