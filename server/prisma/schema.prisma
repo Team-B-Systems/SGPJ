@@ -182,8 +182,6 @@ model Queixa {
   ficheiro      Bytes?
   processoId    Int?
   processo      ProcessoJuridico?
-  funcionarioId Int
-  funcionarios Funcionario @relation(fields: [funcionarioId], references: [id])
   departamentos QueixaDepartamento[]
   pPassivaId    Int                  @unique
   pPassiva      PartePassiva         @relation(fields: [pPassivaId], references: [id])
