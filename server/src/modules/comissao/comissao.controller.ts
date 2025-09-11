@@ -41,13 +41,13 @@ export const editar = async (req: AuthRequest, res: Response) => {
 
 };
 
-/*
+
 export const visualizar = async (req: AuthRequest, res: Response) => {
     try {
-        if (!req.user || req.user.role !== Role.Funcionário) {
+        if (!req.user || req.user.role !== Role.Chefe) {
             return res.status(401).json({ error: "Não autorizado" })
         }
-        const result = await queixaService.visualizar();
+        const result = await comissaoService.visualizar();
         res.json(result);
     } catch (err: any) {
         if (err instanceof ApiException) {
@@ -61,11 +61,11 @@ export const visualizar = async (req: AuthRequest, res: Response) => {
 
 export const pesquisar = async (req: AuthRequest, res: Response) => {
     try {
-        if (!req.user || req.user.role !== Role.Funcionário) {
+        if (!req.user || req.user.role !== Role.Chefe) {
             return res.status(401).json({ error: "Não autorizado" })
         }
         const id = parseInt(req.params.id, 10)
-        const result = await queixaService.pesquisarPorId(id);
+        const result = await comissaoService.pesquisarPorId(id);
         res.json(result);
     } catch (err: any) {
         if (err instanceof ApiException) {
@@ -74,4 +74,4 @@ export const pesquisar = async (req: AuthRequest, res: Response) => {
             res.status(500).json({ error: `Internal Server Error ${err.message}` });
         }
     }
-};*/
+};
