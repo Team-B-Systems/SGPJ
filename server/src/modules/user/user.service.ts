@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { EditDTO } from "./dto/edit.dto";
-import ApiException from "src/common/Exceptions/api.exception";
+import ApiException from "../../common/Exceptions/api.exception";
 
 const prisma = new PrismaClient();
 

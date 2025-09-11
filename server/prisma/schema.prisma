@@ -107,7 +107,7 @@ model Funcionario {
   role                Role
   departamentoId      Int
   departamento        Departamento              @relation(fields: [departamentoId], references: [id])
-  queixa    Queixa []
+  queixas             Queixa []
   comissao            ComissaoFuncionario[]
   partePassiva        FuncionarioPartePassiva[]
   processos           ProcessoJuridico[] // Apenas para funcionários do departamento Jurídico
@@ -187,6 +187,8 @@ model Queixa {
   departamentos QueixaDepartamento[]
   pPassivaId    Int                  @unique
   pPassiva      PartePassiva         @relation(fields: [pPassivaId], references: [id])
+  funcionarioId Int
+  funcionario   Funcionario          @relation(fields: [funcionarioId], references: [id])
 }
 
 model PartePassiva {
