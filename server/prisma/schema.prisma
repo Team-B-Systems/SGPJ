@@ -107,7 +107,7 @@ model Funcionario {
   role                Role
   departamentoId      Int
   departamento        Departamento              @relation(fields: [departamentoId], references: [id])
-  queixasCriadas     Queixa[]
+  queixas             Queixa []
   comissao            ComissaoFuncionario[]
   partePassiva        FuncionarioPartePassiva[]
   processos           ProcessoJuridico[] // Apenas para funcionários do departamento Jurídico
@@ -179,8 +179,11 @@ model Queixa {
   dataEntrada   DateTime
   descricao     String               @db.VarChar(1000)
   estado        EstadoQueixa
-  ficheiro      Bytes
+  ficheiro      Bytes?
+  processoId    Int?
   processo      ProcessoJuridico?
+  funcionarioId Int
+  funcionarios Funcionario @relation(fields: [funcionarioId], references: [id])
   departamentos QueixaDepartamento[]
   pPassivaId    Int                  @unique
   pPassiva      PartePassiva         @relation(fields: [pPassivaId], references: [id])

@@ -3,6 +3,7 @@ import expressListRoutes from 'express-list-routes'
 import authRouter from './modules/auth/auth.routes';
 import userRouter from "./modules/user/user.routes";
 import adminRouter from "./modules/admin/admin.routes";
+import queixaRouter from "./modules/queixa/queixa.routes";
 import processRouter from "./modules/process/process.routes";
 
 
@@ -28,6 +29,10 @@ app.use("/auth", authRouter);
 expressListRoutes(authRouter, { prefix: "/auth", forceUnixPathStyle: true });
 
 app.use("/funcionario", userRouter);
+
+app.use("/queixa", queixaRouter)
+
+expressListRoutes(queixaRouter, { prefix: "/queixa", forceUnixPathStyle: true });
 
 expressListRoutes(userRouter, { prefix: "/funcionario", forceUnixPathStyle: true });
 
