@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { comparePassword, hashPassword } from "../../utils/hash";
 import { LoginDto } from "./dto/login.dto";
 import { SignupDto } from "./dto/signup.dto";
-import ApiException from "src/common/Exceptions/api.exception";
+import ApiException from "../../common/Exceptions/api.exception";
 
 const prisma = new PrismaClient();
 
@@ -48,6 +48,8 @@ export const login = async (dto: LoginDto) => {
     const user = await prisma.funcionario.findUnique({
         where: { email: dto.email },
     });
+
+    console.log({ ...dto });
 
     if (!user) {
         throw new ApiException(401, "Credenciais inválidas");
