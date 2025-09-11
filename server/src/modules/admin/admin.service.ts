@@ -3,7 +3,7 @@ import { LoginDto } from "./dto/login.dto";
 import { comparePassword } from "../../utils/hash";
 import jwt from "jsonwebtoken";
 import { EditDto } from "./dto/edit.dto";
-import ApiException from "src/common/Exceptions/api.exception";
+import ApiException from "../../common/Exceptions/api.exception";
 
 const prisma = new PrismaClient();
 
