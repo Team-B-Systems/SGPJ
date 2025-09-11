@@ -11,7 +11,7 @@ Navegue até a pasta `server` e podemos começar 😁😁.
 
   // NÃO COPIAR A PARTIR DAQUI. EXEMPLO:
 
-  DATABASE_URL=mysql://root:1234567890@localhost:9306/sgpj
+  DATABASE_URL=mysql://root:1234567890@localhost:3306/sgpj
   ```
 2. Instale as dependências do projeto:
   ```bash
