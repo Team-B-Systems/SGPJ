@@ -1,0 +1,130 @@
+/* Escopo apenas dentro do login */
+.login-page * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.login-page {
+  background: linear-gradient(135deg, #2c3e50, #3498db);
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Container do login */
+.login-page .login-container {
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 400px;
+  padding: 40px;
+  text-align: center;
+}
+
+.login-page .logo {
+  margin-bottom: 30px;
+}
+
+.login-page .logo h1 {
+  color: #2c3e50;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.login-page .logo p {
+  color: #7f8c8d;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+.login-page .input-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.login-page .input-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.login-page .input-group input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.login-page .input-group input:focus {
+  border-color: #3498db;
+  outline: none;
+}
+
+.login-page .btn-login {
+  width: 100%;
+  padding: 12px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.login-page .btn-login:hover {
+  background-color: #2980b9;
+}
+
+.login-page .options {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+  font-size: 14px;
+}
+
+.login-page .remember-me {
+  display: flex;
+  align-items: center;
+}
+
+.login-page .remember-me input {
+  margin-right: 5px;
+}
+
+.login-page .forgot-password {
+  color: #3498db;
+  text-decoration: none;
+}
+
+.login-page .forgot-password:hover {
+  text-decoration: underline;
+}
+
+.login-page .error-message {
+  color: #e74c3c;
+  font-size: 14px;
+  margin-top: 5px;
+  text-align: left;
+}
+
+.login-page .footer {
+  margin-top: 30px;
+  color: #7f8c8d;
+  font-size: 12px;
+}
+
+@media (max-width: 480px) {
+  .login-page .login-container {
+    padding: 30px 20px;
+    margin: 0 15px;
+  }
+}
