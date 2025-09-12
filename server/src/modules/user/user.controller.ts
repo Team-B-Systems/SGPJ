@@ -5,8 +5,15 @@ import ApiException from "../../common/Exceptions/api.exception";
 
 export const getProfile = async (req: AuthRequest, res: Response) => {
     try {
-        const user = req.user;
-        res.json({ user });
+        const userId = req.user.userId;
+        
+        if (!userId) {
+            return res.status(401).json({ error: "Utilizador não autenticado" });
+        }
+
+        const user = await userService.getProfile(userId);
+        
+        res.status(200).json({ user });
     } catch (err: any) {
         if (err instanceof ApiException) {
             res.status(err.status).json({ error: err.message });
