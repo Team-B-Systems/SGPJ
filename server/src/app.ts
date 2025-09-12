@@ -5,6 +5,7 @@ import userRouter from "./modules/user/user.routes";
 import adminRouter from "./modules/admin/admin.routes";
 import queixaRouter from "./modules/queixa/queixa.routes";
 import processRouter from "./modules/process/process.routes";
+import documentsRouter from "./modules/documents/documents.routes";
 
 
 const PORT = process.env.PORT || 3000;
@@ -13,8 +14,12 @@ console.log(`\nIniciando o servidor na porta ${PORT}... 😁\n`)
 
 const app = express();
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }))
+app.use("/documents", documentsRouter)
+
+expressListRoutes(documentsRouter, { prefix: "/documents", forceUnixPathStyle: true });
+
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }))
 
 app.get("/", (_: Request, res: Response) => {
   res.json({
