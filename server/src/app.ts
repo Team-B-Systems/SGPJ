@@ -5,6 +5,7 @@ import userRouter from "./modules/user/user.routes";
 import adminRouter from "./modules/admin/admin.routes";
 import queixaRouter from "./modules/queixa/queixa.routes";
 import processRouter from "./modules/process/process.routes";
+import comissaoRouter from "./modules/comissao/comissao.routes";
 
 
 const PORT = process.env.PORT || 3000;
@@ -43,6 +44,11 @@ expressListRoutes(adminRouter, { prefix: "/admin", forceUnixPathStyle: true });
 app.use("/process", processRouter)
 
 expressListRoutes(processRouter, { prefix: "/process", forceUnixPathStyle: true });
+
+app.use("/comissao", comissaoRouter)
+
+expressListRoutes(comissaoRouter, { prefix: "/comissao", forceUnixPathStyle: true });
+
 
 app.listen(PORT, () => {
     console.log(`\nApp executando na porta ${PORT} 🚀🆗✅`)
