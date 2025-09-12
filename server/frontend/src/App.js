@@ -52,9 +52,6 @@ function Header({ title, notifications = 3, user = { name: 'Genuino Cavquila', r
           <i className="fa-solid fa-bell">🔔</i>
           <span className="notification-badge">{notifications}</span>
         </div>
-        <div className="header-icon-item">
-          <i className="fa-solid fa-envelope">✉️</i>
-        </div>
         <div className="user-info">
           <div className="user-avatar">{user.name ? user.name.charAt(0) : 'U'}</div>
           <div className="user-details">
