@@ -7,6 +7,7 @@ import queixaRouter from "./modules/queixa/queixa.routes";
 import processRouter from "./modules/process/process.routes";
 import documentsRouter from "./modules/documents/documents.routes";
 import comissaoRouter from "./modules/comissao/comissao.routes";
+import reuniaoRouter from "./modules/reuniao/reuniao.routes";
 
 
 const PORT = process.env.PORT || 3000;
@@ -53,6 +54,11 @@ expressListRoutes(processRouter, { prefix: "/process", forceUnixPathStyle: true 
 app.use("/comissao", comissaoRouter)
 
 expressListRoutes(comissaoRouter, { prefix: "/comissao", forceUnixPathStyle: true });
+
+
+app.use("/reuniao", reuniaoRouter)
+
+expressListRoutes(reuniaoRouter, { prefix: "/reuniao", forceUnixPathStyle: true });
 
 
 app.listen(PORT, () => {

@@ -20,7 +20,7 @@ export const anexarDocumento = async (userId: number, dto: AttachDocumentDTO) =>
     }
 
     // Store the BLOB file in the database
-    await prisma.documento.create({
+    const documento = await prisma.documento.create({
         data: {
             titulo: `${dto.titulo}-${dto.ficheiro.originalname}`,
             descricao: dto.descricao,
@@ -30,7 +30,10 @@ export const anexarDocumento = async (userId: number, dto: AttachDocumentDTO) =>
         },
     });
 
+    const { ficheiro, ...documentoSemFicheiro } = documento
+
     return {
+        documento: documentoSemFicheiro,
         message: "Documento anexado com sucesso",
     }
 }
