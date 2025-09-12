@@ -7,20 +7,278 @@ generator client {
   provider = "prisma-client-js"
 }
 
- enum Role{
+enum Role {
   Admin
   Chefe
   Funcionário
- }
+}
 
-  model Funcionario{
-    id       Int    @id @default(autoincrement())
-    nome String
-    numero_identificacao String
-    email String @unique
-    categoria String
-    senha String
-    estado Boolean
-    role Role
+enum TipoDeProcesso {
+  Disciplinar
+  Laboral
+  Administrativo
+  Cível
+  Criminal
+}
 
-  }
+enum NomeDepartamento {
+  RecursosHumanos
+  Jurídico
+  Financeiro
+  TI
+}
+
+enum EstadoProcesso {
+  Aberto
+  EmAndamento
+  Arquivado
+}
+
+enum EstadoFuncionario {
+  Ativo
+  Inativo
+}
+
+enum EstadoReuniao {
+  Agendada
+  Concluida
+  Cancelada
+  EmAndamento
+}
+
+enum EstadoQueixa {
+  Pendente
+  EmAnalise
+  Aceite
+  Rejeitada
+}
+
+enum EstadoComissao {
+  Aprovada
+  Rejeitada
+  Dispensada
+}
+
+enum PapelComissaoFuncionario {
+  Presidente
+  Membro
+  Secretario
+}
+
+enum CategoriaFuncionario {
+  Técnico
+  Chefe
+}
+
+enum TipoDecisao {
+  Favoravel
+  Desfavoravel
+  Neutra
+}
+
+enum TipoDocumento {
+  Relatório
+  Ata
+  Parecer
+  Decisão
+  Contestação
+  Prova
+  Outro
+}
+
+enum EnvolvidoPapelNoProcesso {
+  Autor
+  Réu
+  Testemunha
+  Perito
+  Outro
+}
+
+model Funcionario {
+  id                  Int                       @id @default(autoincrement())
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  nome                String
+  numeroIdentificacao String
+  email               String                    @unique
+  categoria           CategoriaFuncionario
+  senha               String
+  estado              EstadoFuncionario
+  role                Role
+  departamentoId      Int
+  departamento        Departamento              @relation(fields: [departamentoId], references: [id])
+  queixas             Queixa []
+  comissao            ComissaoFuncionario[]
+  partePassiva        FuncionarioPartePassiva[]
+  processos           ProcessoJuridico[] // Apenas para funcionários do departamento Jurídico
+}
+
+model Departamento {
+  id           Int                  @id @default(autoincrement())
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  nome         NomeDepartamento
+  descricao    String
+  funcionarios Funcionario[]
+  queixas      QueixaDepartamento[]
+}
+
+model ProcessoJuridico {
+  id               Int                         @id @default(autoincrement())
+  createdAt        DateTime                    @default(now())
+  updatedAt        DateTime                    @updatedAt
+  numeroProcesso   String                      @unique
+  dataAbertura     DateTime
+  assunto          String
+  tipoProcesso     TipoDeProcesso
+  estado           EstadoProcesso
+  dataEncerramento DateTime?
+  queixaId         Int?                        @unique
+  queixa           Queixa?                     @relation(fields: [queixaId], references: [id])
+  documentos       Documento[]
+  reunioes         Reuniao[]
+  parecer          Parecer?
+  decisoes         Decisao[]
+  envolvidos       EnvolvidoProcessoJuridico[]
+  responsavelId    Int
+  responsavel      Funcionario                 @relation(fields: [responsavelId], references: [id])
+}
+
+model Documento {
+  id            Int              @id @default(autoincrement())
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  titulo        String
+  descricao     String
+  tipoDocumento TipoDocumento
+  ficheiro      Bytes
+  reuniao       Reuniao?
+  processoId    Int
+  processo      ProcessoJuridico @relation(fields: [processoId], references: [id])
+}
+
+model Reuniao {
+  id          Int              @id @default(autoincrement())
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  dataHora    DateTime
+  local       String
+  estado      EstadoReuniao
+  documentoId Int?             @unique
+  documento   Documento?       @relation(fields: [documentoId], references: [id])
+  processoId  Int
+  processo    ProcessoJuridico @relation(fields: [processoId], references: [id])
+  comissaoId  Int
+  comissao    Comissao         @relation(fields: [comissaoId], references: [id])
+}
+
+model Queixa {
+  id            Int                  @id @default(autoincrement())
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  dataEntrada   DateTime
+  descricao     String               @db.VarChar(1000)
+  estado        EstadoQueixa
+  ficheiro      Bytes?
+  processoId    Int?
+  processo      ProcessoJuridico?
+  departamentos QueixaDepartamento[]
+  pPassivaId    Int                  @unique
+  pPassiva      PartePassiva         @relation(fields: [pPassivaId], references: [id])
+  funcionarioId Int
+  funcionario   Funcionario          @relation(fields: [funcionarioId], references: [id])
+}
+
+model PartePassiva {
+  id           Int                       @id @default(autoincrement())
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+  nome         String
+  funcionarios FuncionarioPartePassiva[]
+  queixa       Queixa?
+}
+
+model Parecer {
+  id          Int              @id @default(autoincrement())
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  descricao   String           @db.VarChar(1000)
+  dataEmissao DateTime
+  processoId  Int              @unique
+  processo    ProcessoJuridico @relation(fields: [processoId], references: [id])
+}
+
+model Decisao {
+  id          Int              @id @default(autoincrement())
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  descricao   String           @db.VarChar(1000)
+  tipoDecisao TipoDecisao
+  dataDecisao DateTime
+  processoId  Int
+  processo    ProcessoJuridico @relation(fields: [processoId], references: [id])
+}
+
+model Comissao {
+  id               Int                   @id @default(autoincrement())
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  nome             String
+  dataCriacao      DateTime              @default(now())
+  descricao        String
+  estado           EstadoComissao
+  dataEncerramento DateTime?
+  funcionarios     ComissaoFuncionario[]
+  reunioes         Reuniao[]
+}
+
+model Envolvido {
+  id                  Int                         @id @default(autoincrement())
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+  nome                String
+  numeroIdentificacao String
+  papelNoProcesso     EnvolvidoPapelNoProcesso
+  processosJuridicos  EnvolvidoProcessoJuridico[]
+}
+
+model QueixaDepartamento {
+  id             Int          @id @default(autoincrement())
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  queixaId       Int
+  departamentoId Int
+  queixa         Queixa       @relation(fields: [queixaId], references: [id])
+  departamento   Departamento @relation(fields: [departamentoId], references: [id])
+}
+
+model ComissaoFuncionario {
+  id            Int                      @id @default(autoincrement())
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  comissaoId    Int
+  funcionarioId Int
+  papel         PapelComissaoFuncionario
+  comissao      Comissao                 @relation(fields: [comissaoId], references: [id])
+  funcionario   Funcionario              @relation(fields: [funcionarioId], references: [id])
+}
+
+model FuncionarioPartePassiva {
+  id             Int          @id @default(autoincrement())
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  partePassivaId Int
+  funcionarioId  Int
+  pPassiva       PartePassiva @relation(fields: [partePassivaId], references: [id])
+  funcionario    Funcionario  @relation(fields: [funcionarioId], references: [id])
+}
+
+model EnvolvidoProcessoJuridico {
+  id                 Int              @id @default(autoincrement())
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  envolvidoId        Int
+  processoJuridicoId Int
+  envolvido          Envolvido        @relation(fields: [envolvidoId], references: [id])
+  processo           ProcessoJuridico @relation(fields: [processoJuridicoId], references: [id])
+}

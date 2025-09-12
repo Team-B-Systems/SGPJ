@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { comparePassword, hashPassword } from "../../utils/hash";
 import { LoginDto } from "./dto/login.dto";
 import { SignupDto } from "./dto/signup.dto";
+import ApiException from "../../common/Exceptions/api.exception";
 
 const prisma = new PrismaClient();
 
@@ -12,20 +13,29 @@ export const signup = async (dto: SignupDto) => {
         });
     
         if (existingUser){
-             throw new Error("Email já está em uso");
+            throw new ApiException(400, "Requisição inválida")
         }
     
         const hashedsenha = await hashPassword(dto.senha);
+
+        const departamento = await prisma.departamento.findFirst({
+            where: { nome: dto.nomeDepartamento },
+        });
+
+        if (!departamento) {
+            throw new ApiException(404, "Departamento não encontrado");
+        }
     
         const newUser = await prisma.funcionario.create({
             data: {
                 nome: dto.nome,
-                numero_identificacao: dto.numero_identificacao,
+                numeroIdentificacao: dto.numero_identificacao,
                 email: dto.email,
                 categoria: dto.categoria,
                 senha: hashedsenha,
                 estado: dto.estado,
-                role: dto.role
+                role: dto.role,
+                departamentoId: departamento.id,
             }
         });
   
@@ -39,13 +49,15 @@ export const login = async (dto: LoginDto) => {
         where: { email: dto.email },
     });
 
+    console.log({ ...dto });
+
     if (!user) {
-        throw new Error("Usuário não encontrado");
+        throw new ApiException(401, "Credenciais inválidas");
     }
 
     const isValid = await comparePassword(dto.senha, user.senha);
     if (!isValid) {
-        throw new Error("Credenciais inválidas");
+        throw new ApiException(401, "Credenciais inválidas");
     }
 
     const token = jwt.sign(
