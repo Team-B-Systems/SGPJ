@@ -81,7 +81,7 @@ export const baixarDocumento = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ error: "ID do documento inválido" });
         }
 
-        const documento = await documentService.baixarDocumento(documentoId, 5);
+        const documento = await documentService.baixarDocumento(documentoId, req.user.userId);
 
         const buffer = Buffer.isBuffer(documento.ficheiro)
             ? documento.ficheiro
