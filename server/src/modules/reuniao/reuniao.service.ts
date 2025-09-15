@@ -115,8 +115,8 @@ export const anexar = async (documentId: number, dto: anexarDto) => {
         throw new ApiException(404, "Reunião não encontrada");
     }
 
-    if (reuniao.estado !== EstadoReuniao.Concluida && dto.tipoDocumento == TipoDocumento.Ata){
-         throw new ApiException(400, "Não pode anexar ata em uma reunião que não foi concluida");
+    if (reuniao.estado !== EstadoReuniao.Concluida && dto.tipoDocumento == TipoDocumento.Ata) {
+        throw new ApiException(400, "Não pode anexar ata em uma reunião que não foi concluida");
     }
 
     const updateReuniao = await prisma.reuniao.update({
@@ -158,6 +158,42 @@ export const editarEstadoReuniao = async (idReuniao: number, dto: editarReuniaoD
         await atualizaEstado(idReuniao, EstadoReuniao.Concluida);
         return { message: "Estado da reunião atualizado" }
     }
+}
+
+export const remarcarReuniao = async (idReuniao: number, dto: editarReuniaoDto) => {
+    const reuniao = await pesquisarReuniaoPorId(idReuniao);
+    const dataReuniao = new Date(dto.data);
+    const agora = new Date();
+    dataReuniao.setHours(0, 0, 0, 0);
+    agora.setHours(0, 0, 0, 0);
+
+    if (reuniao.estado === EstadoReuniao.Cancelada) {
+        throw new ApiException(400, "Não é permitido remarcar a reunião que já se encontra cancelada");
+    }
+
+    if (reuniao.estado === EstadoReuniao.EmAndamento) {
+        throw new ApiException(400, "Não é permitido remarcar a reunião que já está em andamento");
+    }
+
+    if (reuniao.estado === EstadoReuniao.Concluida) {
+        throw new ApiException(400, "Não é permitido remarcar a reunião que está concluída");
+    }
+
+    if (dataReuniao < agora) {
+        throw new ApiException(400, "A data da reunião deve ser maior ou igual à data atual.");
+    }
+
+    if (reuniao.dataHora.setHours(0, 0, 0, 0) > dataReuniao.getTime()) {
+        throw new ApiException(400, "A nova data não pode ser menor que a data atual da reunião.");
+    }
+
+    return await prisma.reuniao.update({
+        where: { id: idReuniao },
+        data: {
+            dataHora: dto.data,
+            local: dto.local
+        }
+    });
 }
 
 async function atualizaEstado(idReuniao: number, estado: EstadoReuniao) {

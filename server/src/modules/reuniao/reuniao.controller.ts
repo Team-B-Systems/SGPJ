@@ -158,8 +158,8 @@ export const anexarDocument = async (req: AuthRequest, res: Response) => {
             ficheiro: req.file!,
         };
 
-        if (dto.tipoDocumento !== TipoDocumento.Ata){
-             return res.status(400).json({ error: "O documento a anexar deve ser do tipo Ata" });
+        if (dto.tipoDocumento !== TipoDocumento.Ata) {
+            return res.status(400).json({ error: "O documento a anexar deve ser do tipo Ata" });
         }
 
         const documento = await anexarDocumento.anexarDocumento(req.user.userId, dto);
@@ -174,4 +174,23 @@ export const anexarDocument = async (req: AuthRequest, res: Response) => {
         }
     }
 
+}
+
+export const remarcarReuniao = async (req: AuthRequest, res: Response) => {
+    if (!req.user || req.user.role !== Role.Funcionário) {
+        return res.status(401).json({ error: "Não autorizado" })
+    }
+
+    try {
+        const id = parseInt(req.params.id, 10);
+
+        const result = await agendarReuniaoService.remarcarReuniao(id, req.body);
+        res.status(200).json(result)
+    } catch (err: any) {
+        if (err instanceof ApiException) {
+            res.status(err.status).json({ error: err.message });
+        } else {
+            res.status(500).json({ error: `Internal Server Error ${err.message}` });
+        }
+    }
 }
