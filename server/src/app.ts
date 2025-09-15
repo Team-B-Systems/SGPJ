@@ -8,6 +8,7 @@ import processRouter from "./modules/process/process.routes";
 import documentsRouter from "./modules/documents/documents.routes";
 import comissaoRouter from "./modules/comissao/comissao.routes";
 import reuniaoRouter from "./modules/reuniao/reuniao.routes";
+import parteenvolvido from "./modules/parteenvolvido/parteenvolvido.routes";
 
 
 const PORT = process.env.PORT || 3000;
@@ -15,10 +16,6 @@ const PORT = process.env.PORT || 3000;
 console.log(`\nIniciando o servidor na porta ${PORT}... 😁\n`)
 
 const app = express();
-
-app.use("/documents", documentsRouter)
-
-expressListRoutes(documentsRouter, { prefix: "/documents", forceUnixPathStyle: true });
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }))
@@ -55,6 +52,13 @@ app.use("/comissao", comissaoRouter)
 
 expressListRoutes(comissaoRouter, { prefix: "/comissao", forceUnixPathStyle: true });
 
+app.use("/documents", documentsRouter)
+
+expressListRoutes(documentsRouter, { prefix: "/documents", forceUnixPathStyle: true });
+
+app.use("/parteenvolvido", parteenvolvido)
+
+expressListRoutes(parteenvolvido, { prefix: "/parteenvolvido", forceUnixPathStyle: true });
 
 app.use("/reuniao", reuniaoRouter)
 
