@@ -66,7 +66,7 @@ export const login = async (dto: LoginDto) => {
         { expiresIn: "5d" }
     );
 
-    const { id, ...sanitizedUser } = user;
+    const { id, senha, ...sanitizedUser } = user;
 
     return { token, user: { ...sanitizedUser } };
 };
