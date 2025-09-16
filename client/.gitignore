@@ -1,0 +1,40 @@
+# Dependências
+/node_modules
+
+# Build
+/dist
+/build
+/out
+
+# Configurações do TypeScript
+*.tsbuildinfo
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Ambiente
+.env
+.env.local
+.env.*.local
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# IDEs e editores
+.vscode/
+.idea/
+*.swp
+
+# Test coverage
+/coverage
+
+# Cache do Next.js ou similares
+.next/
+.cache/
+
+# Docker
+docker-compose.override.yml

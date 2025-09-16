@@ -27,7 +27,9 @@ export const login = async (dto: LoginDto) => {
         { expiresIn: "5d" }
     )
 
-    return { token, user: { id: user.id, email: user.email, nome: user.nome } }
+    const { id, senha, ...sanitizedUser } = user;
+
+    return { token, user: { ...sanitizedUser } };
 };
 
 export const perfil = async (userId: number) => {

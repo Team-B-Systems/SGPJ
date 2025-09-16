@@ -1,4 +1,5 @@
 import express, { Request, Response } from "express";
+import cors from "cors";
 import expressListRoutes from 'express-list-routes'
 import authRouter from './modules/auth/auth.routes';
 import userRouter from "./modules/user/user.routes";
@@ -16,6 +17,13 @@ const PORT = process.env.PORT || 3000;
 console.log(`\nIniciando o servidor na porta ${PORT}... 😁\n`)
 
 const app = express();
+
+app.use(
+  cors({
+    origin: "http://localhost:3003", // ou "*" para liberar tudo
+    credentials: true,               // se fores enviar cookies ou headers de auth
+  })
+);
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }))
@@ -66,5 +74,5 @@ expressListRoutes(reuniaoRouter, { prefix: "/reuniao", forceUnixPathStyle: true 
 
 
 app.listen(PORT, () => {
-    console.log(`\nApp executando na porta ${PORT} 🚀🆗✅`)
+  console.log(`\nApp executando na porta ${PORT} 🚀🆗✅`)
 });
