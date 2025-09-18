@@ -47,7 +47,7 @@ export const perfil = async (userId: number) => {
 export const editarPerfil = async (userId: number, dto: EditDto) => {
 
     const user = await prisma.funcionario.findUnique({
-        where: { id: userId }
+        where: { email: dto.email }
     });
 
     if (!user) {
@@ -55,9 +55,10 @@ export const editarPerfil = async (userId: number, dto: EditDto) => {
     }
 
     const updateUser = await prisma.funcionario.update({
-        where: { id: userId },
+        where: { email: dto.email },
         data: {
-            nome: dto.nome ?? user.nome
+            nome: dto.nome,
+            estado: dto.estado,
         },
     });
 
@@ -67,20 +68,34 @@ export const editarPerfil = async (userId: number, dto: EditDto) => {
 
 export const listarFuncionarios = async () => {
     const users = await prisma.funcionario.findMany({
-        where: { role: Role.Funcionário }
+        where: { role: { not: Role.Admin } },
+        include: { departamento: true }
     });
 
     if (!users) {
         throw new ApiException(404, "Utilizadores não encontrados");
     }
 
-
-    return users;
+    
+    return users.map((user) => {
+        return {
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            nome: user.nome,
+            numeroIdentificacao: user.numeroIdentificacao,
+            categoria: user.categoria,
+            estado: user.estado,
+            departamento: user.departamento.nome
+        }
+    });
 };
 
 export const pesquisarFuncionario = async (email: string) => {
     const user = await prisma.funcionario.findUnique({
-        where: { email: email, role: Role.Funcionário }
+        where: { email: email, role: { not: Role.Admin } }
     });
 
     if (!user) {

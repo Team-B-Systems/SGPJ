@@ -17,6 +17,7 @@ import { QueixasPage } from "./components/queixas/queixas-page";
 import { ReunioesPage } from "./components/reunioes/reunioes-page";
 import { ComissoesPage } from "./components/comissoes/comissoes-page";
 import { EnvolvidosPage } from "./components/envolvidos/envolvidos-page";
+import { FuncionariosProvider } from "./lib/funcionarios-context";
 import { ProcessosProvider } from "./lib/processos-context";
 
 function PrivateRoutes() {
@@ -63,9 +64,12 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <ProcessosProvider>
+      <FuncionariosProvider>
+        <ProcessosProvider>
         <AppContent />
-      </ProcessosProvider>
+          </ProcessosProvider>
+      </FuncionariosProvider>
     </AuthProvider>
+
   );
 }

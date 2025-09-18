@@ -75,9 +75,11 @@ export function LoginForm() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup">Cadastro</TabsTrigger>
+            <TabsList className="w-full bg-white rounded-md">
+              <TabsTrigger
+                value="login"
+                className="w-full flex items-center justify-center px-4 py-2"
+              >Login</TabsTrigger>
             </TabsList>
 
             {/* --- LOGIN --- */}
@@ -109,18 +111,7 @@ export function LoginForm() {
                   />
                 </div>
                 <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="isAdmin"
-                    checked={loginData.isAdmin}
-                    onChange={(e) =>
-                      setLoginData({ ...loginData, isAdmin: e.target.checked })
-                    }
-                    className="rounded"
-                  />
-                  <Label htmlFor="isAdmin" className="text-sm">
-                    Login como Administrador
-                  </Label>
+
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Entrando..." : "Entrar"}
@@ -135,13 +126,6 @@ export function LoginForm() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-
-          <div className="mt-6 text-sm text-muted-foreground">
-            <p className="mb-2">Usuários de teste:</p>
-            <p>• joao@sgpj.com (Funcionário)</p>
-            <p>• maria@sgpj.com (Chefe)</p>
-            <p>• admin@sgpj.com (Admin - use o checkbox)</p>
-          </div>
         </CardContent>
       </Card>
     </div>

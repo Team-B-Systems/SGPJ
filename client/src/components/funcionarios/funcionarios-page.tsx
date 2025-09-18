@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -6,24 +6,25 @@ import { Badge } from '../ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { useAuth } from '../../lib/auth-context';
-import { 
-  Plus, 
-  Search, 
-  Edit, 
-  Eye, 
-  UserCheck, 
-  UserX 
+import {
+  Plus,
+  Search,
+  Edit,
+  Eye,
+  UserCheck,
+  UserX
 } from 'lucide-react';
-import { mockFuncionarios, type Funcionario } from '../../lib/mock-data';
 import { FuncionarioForm } from './funcionario-form';
+import { useFuncionarios } from '../../lib/funcionarios-context';
+import { User } from '../../lib/api';
 
 export function FuncionariosPage() {
   const { user } = useAuth();
-  const [funcionarios, setFuncionarios] = useState<Funcionario[]>(mockFuncionarios);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [editingFuncionario, setEditingFuncionario] = useState<Funcionario | null>(null);
-  const [selectedFuncionario, setSelectedFuncionario] = useState<Funcionario | null>(null);
+  const [editingFuncionario, setEditingFuncionario] = useState<User | null>(null);
+  const [selectedFuncionario, setSelectedFuncionario] = useState<User | null>(null);
+  const { funcionarios, loading, fetchFuncionarios, addFuncionario, searchFuncionario, updateFuncionario } = useFuncionarios();
 
   // Only allow admin access
   if (user?.role !== 'Admin') {
@@ -39,38 +40,43 @@ export function FuncionariosPage() {
     );
   }
 
+  useEffect(() => {
+    fetchFuncionarios();
+  }, [fetchFuncionarios]);
+
+
   const filteredFuncionarios = funcionarios.filter(funcionario =>
     funcionario.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     funcionario.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    funcionario.cargo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    funcionario.departamento.toLowerCase().includes(searchTerm.toLowerCase())
+    funcionario.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    funcionario.departamento.toString().toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleCreateFuncionario = (funcionarioData: Omit<Funcionario, 'id'>) => {
-    const newFuncionario: Funcionario = {
+  const handleCreateFuncionario = (funcionarioData: Omit<User, 'id'>) => {
+    const newFuncionario: User = {
       ...funcionarioData,
-      id: (funcionarios.length + 1).toString(),
     };
-    setFuncionarios([...funcionarios, newFuncionario]);
+    addFuncionario(newFuncionario);
     setShowForm(false);
   };
 
-  const handleEditFuncionario = (funcionarioData: Omit<Funcionario, 'id'>) => {
-    if (editingFuncionario) {
-      const updatedFuncionarios = funcionarios.map(f =>
-        f.id === editingFuncionario.id ? { ...funcionarioData, id: editingFuncionario.id } : f
-      );
-      setFuncionarios(updatedFuncionarios);
-      setEditingFuncionario(null);
-      setShowForm(false);
-    }
+  const handleEditFuncionario = async (funcionarioData: Omit<User, 'email'>) => {
+    if (!editingFuncionario || !editingFuncionario.id) return;
+
+    await updateFuncionario(editingFuncionario.id, {
+      ...funcionarioData,
+      email: editingFuncionario.email,
+    });
+    console.log("Funcionario atualizado:", funcionarioData);
+    setEditingFuncionario(null);
+    setShowForm(false);
   };
 
-  const handleToggleStatus = (id: string) => {
+  const handleToggleStatus = (email: string) => {
     const updatedFuncionarios = funcionarios.map(f =>
-      f.id === id ? { ...f, status: f.status === 'ativo' ? 'inativo' as const : 'ativo' as const } : f
+      f.email === email ? { ...f, estado: f.estado === 'ativo' ? 'inativo' as const : 'ativo' as const } : f
     );
-    setFuncionarios(updatedFuncionarios);
+    //setFuncionarios(updatedFuncionarios);
   };
 
   const getStatusBadge = (status: string) => {
@@ -86,11 +92,11 @@ export function FuncionariosPage() {
 
   const getPerfilBadge = (perfil: string) => {
     switch (perfil) {
-      case 'administrador':
+      case 'Admin':
         return <Badge variant="destructive">Administrador</Badge>;
-      case 'chefe':
+      case 'Chefe':
         return <Badge className="bg-blue-100 text-blue-800">Chefe</Badge>;
-      case 'funcionario':
+      case 'Funcionário':
         return <Badge className="bg-green-100 text-green-800">Funcionário</Badge>;
       default:
         return <Badge variant="outline">{perfil}</Badge>;
@@ -128,7 +134,10 @@ export function FuncionariosPage() {
                 className="max-w-md"
               />
             </div>
-            <Button variant="outline">
+            <Button
+              variant="outline"
+              onClick={() => searchFuncionario({ email: searchTerm })}
+            >
               <Search className="w-4 h-4 mr-2" />
               Buscar
             </Button>
@@ -153,7 +162,7 @@ export function FuncionariosPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {funcionarios.filter(f => f.status === 'ativo').length}
+              {funcionarios.filter(f => f.estado === 'Ativo').length}
             </div>
             <p className="text-xs text-muted-foreground">ativos</p>
           </CardContent>
@@ -164,7 +173,7 @@ export function FuncionariosPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {funcionarios.filter(f => f.perfil === 'chefe').length}
+              {funcionarios.filter(f => f.role === 'Chefe').length}
             </div>
             <p className="text-xs text-muted-foreground">chefes</p>
           </CardContent>
@@ -175,7 +184,7 @@ export function FuncionariosPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {funcionarios.filter(f => f.perfil === 'administrador').length}
+              {funcionarios.filter(f => f.role === 'Admin').length}
             </div>
             <p className="text-xs text-muted-foreground">administradores</p>
           </CardContent>
@@ -191,7 +200,7 @@ export function FuncionariosPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-scroll">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -206,16 +215,16 @@ export function FuncionariosPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredFuncionarios.map((funcionario) => (
-                  <TableRow key={funcionario.id}>
+                {filteredFuncionarios.map((funcionario, index) => (
+                  <TableRow key={index}>
                     <TableCell className="font-medium">{funcionario.nome}</TableCell>
                     <TableCell>{funcionario.email}</TableCell>
-                    <TableCell>{funcionario.cargo}</TableCell>
+                    <TableCell>{funcionario.categoria}</TableCell>
                     <TableCell>{funcionario.departamento}</TableCell>
-                    <TableCell>{getPerfilBadge(funcionario.perfil)}</TableCell>
-                    <TableCell>{getStatusBadge(funcionario.status)}</TableCell>
+                    <TableCell>{getPerfilBadge(funcionario.role)}</TableCell>
+                    <TableCell>{getStatusBadge(funcionario.estado)}</TableCell>
                     <TableCell>
-                      {new Date(funcionario.dataAdmissao).toLocaleDateString('pt-BR')}
+                      {new Date(funcionario.createdAt).toLocaleDateString('pt-BR')}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -249,7 +258,7 @@ export function FuncionariosPage() {
                                   </div>
                                   <div>
                                     <h4 className="font-medium">Cargo</h4>
-                                    <p className="text-sm text-muted-foreground">{selectedFuncionario.cargo}</p>
+                                    <p className="text-sm text-muted-foreground">{selectedFuncionario.categoria}</p>
                                   </div>
                                   <div>
                                     <h4 className="font-medium">Departamento</h4>
@@ -257,16 +266,16 @@ export function FuncionariosPage() {
                                   </div>
                                   <div>
                                     <h4 className="font-medium">Perfil</h4>
-                                    <div className="mt-1">{getPerfilBadge(selectedFuncionario.perfil)}</div>
+                                    <div className="mt-1">{getPerfilBadge(selectedFuncionario.role)}</div>
                                   </div>
                                   <div>
                                     <h4 className="font-medium">Status</h4>
-                                    <div className="mt-1">{getStatusBadge(selectedFuncionario.status)}</div>
+                                    <div className="mt-1">{getStatusBadge(selectedFuncionario.estado)}</div>
                                   </div>
                                   <div>
                                     <h4 className="font-medium">Data de Admissão</h4>
                                     <p className="text-sm text-muted-foreground">
-                                      {new Date(selectedFuncionario.dataAdmissao).toLocaleDateString('pt-BR')}
+                                      {new Date(selectedFuncionario.createdAt).toLocaleDateString('pt-BR')}
                                     </p>
                                   </div>
                                 </div>
@@ -286,17 +295,17 @@ export function FuncionariosPage() {
                           <Edit className="w-4 h-4" />
                         </Button>
 
-                        <Button
+                        {/* <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleToggleStatus(funcionario.id)}
+                          onClick={() => handleToggleStatus(funcionario.email)}
                         >
-                          {funcionario.status === 'ativo' ? (
+                          {funcionario.estado === 'Ativo' ? (
                             <UserX className="w-4 h-4 text-red-500" />
                           ) : (
                             <UserCheck className="w-4 h-4 text-green-500" />
                           )}
-                        </Button>
+                        </Button> */}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -315,8 +324,8 @@ export function FuncionariosPage() {
               {editingFuncionario ? 'Editar Funcionário' : 'Cadastrar Funcionário'}
             </DialogTitle>
             <DialogDescription>
-              {editingFuncionario 
-                ? 'Atualize as informações do funcionário' 
+              {editingFuncionario
+                ? 'Atualize as informações do funcionário'
                 : 'Preencha os dados para cadastrar um novo funcionário'
               }
             </DialogDescription>

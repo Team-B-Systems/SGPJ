@@ -24,13 +24,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   const menuItems = [
-    { path: "/", label: "Dashboard", icon: Scale, roles: ["Funcionário", "Chefe", "Admin"] },
-    { path: "/processos", label: "Processos", icon: FileText, roles: ["Funcionário", "Chefe", "Admin"] },
-    { path: "/documentos", label: "Documentos", icon: FileText, roles: ["Funcionário", "Chefe", "Admin"] },
-    { path: "/reunioes", label: "Reuniões", icon: Calendar, roles: ["Funcionário", "Chefe", "Admin"] },
-    { path: "/envolvidos", label: "Envolvidos", icon: UserPlus, roles: ["Funcionário", "Chefe", "Admin"] },
-    { path: "/queixas", label: "Queixas", icon: AlertTriangle, roles: ["Funcionário", "Chefe", "Admin"] },
-    { path: "/comissoes", label: "Comissões", icon: Building, roles: ["Funcionário", "Chefe", "Admin"] },
+    { path: "/", label: "Dashboard", icon: Scale, roles: ["Funcionário", "Chefe"] },
+    { path: "/processos", label: "Processos", icon: FileText, roles: ["Funcionário", "Chefe"] },
+    { path: "/documentos", label: "Documentos", icon: FileText, roles: ["Funcionário", "Chefe"] },
+    { path: "/reunioes", label: "Reuniões", icon: Calendar, roles: ["Funcionário", "Chefe"] },
+    { path: "/envolvidos", label: "Envolvidos", icon: UserPlus, roles: ["Funcionário", "Chefe"] },
+    { path: "/queixas", label: "Queixas", icon: AlertTriangle, roles: ["Funcionário", "Chefe"] },
+    { path: "/comissoes", label: "Comissões", icon: Building, roles: ["Funcionário", "Chefe"] },
     { path: "/funcionarios", label: "Funcionários", icon: Users, roles: ["Admin"] },
     { path: "/perfil", label: "Perfil", icon: User, roles: ["Funcionário", "Chefe", "Admin"] },
   ];

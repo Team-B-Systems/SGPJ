@@ -64,8 +64,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(true);
     try {
       const { token, user } = await apiLogin({ email, password, isAdmin });
-      console.log("Login bem-sucedido:", user);
-
       localStorage.setItem("access_token", token);
       localStorage.setItem("user", JSON.stringify(user));
       setUser(user);
