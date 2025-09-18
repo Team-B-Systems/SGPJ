@@ -36,7 +36,6 @@ export const ProcessosProvider = ({ children }: { children: React.ReactNode }) =
     } finally {
       setLoading(false);
     }
-    console.log("Loading finished,", loading);
   },
   [] // ✅ função estável
 );

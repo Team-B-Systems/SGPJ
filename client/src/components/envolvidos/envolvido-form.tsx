@@ -80,6 +80,7 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
       return;
     }
 
+    const findProcessoId = processos.find(p => p.numeroProcesso === formData.processoId.toString())?.id;
     
     onSubmit({
       createdAt: envolvido ? envolvido.createdAt : new Date().toISOString(),
@@ -93,7 +94,7 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
         id: 0,
       },
       envolvidoId: 0,
-      processoJuridicoId: 0
+      processoJuridicoId: findProcessoId!,
     });
 
     onClose();
@@ -140,7 +141,7 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
               </SelectTrigger>
               <SelectContent>
                 {processos.map((processo) => (
-                  <SelectItem key={processo.id} value={processo.id}>
+                  <SelectItem key={processo.id} value={processo.numeroProcesso}>
                     {processo.numeroProcesso} - {processo.assunto}
                   </SelectItem>
                 ))}
