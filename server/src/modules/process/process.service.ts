@@ -9,8 +9,20 @@ const prisma = new PrismaClient();
 // Register a juridic process
 
 export const registerProcess = async (userId: number, dto: RegisterDTO) => {
-    // Generate a process number. Eg.: 2025/{ProcessType}/{UUID}}
-    const processNumber = `2025-${dto.tipo}-${crypto.randomUUID()}`;
+    // Generate a process number. Eg.: 2025/{ProcessType}/{Count + 123456}}
+    const currentYear = new Date().getFullYear();
+
+    const count = await prisma.processoJuridico.count({
+        where: {
+            dataAbertura: {
+                gte: new Date(`${currentYear}-01-01T00:00:00.000Z`),
+                lt: new Date(`${currentYear + 1}-01-01T00:00:00.000Z`),
+            },
+        },
+    });
+
+
+    const processNumber = `2025-${dto.tipo}-${count.toString().padStart(9, "0")}`;
 
     const newProcess = await prisma.processoJuridico.create({
         data: {

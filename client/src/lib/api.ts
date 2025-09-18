@@ -235,7 +235,6 @@ export async function editProcess(
   data: {
     assunto?: string;
     tipoProcesso?: string;
-    estado?: string;
   }
 ): Promise<{
   process: Processo;
@@ -244,5 +243,37 @@ export async function editProcess(
   const response = await api.patch(`/process/edit/${processId}`, data);
   return response.data;
 }
+
+// --------- PARTES ENVOLVIDAS ---------
+
+// Interface equivalente ao DTO do backend
+export interface AdicionarParteDTO {
+  processoId: number;
+  nome: string;
+  numeroIdentificacao: string;
+  papel: string; // ou enum se quiseres tipar igual ao backend
+}
+
+// Função para adicionar parte envolvida
+export async function addParteEnvolvida(
+  dto: AdicionarParteDTO
+): Promise<{ message: string; parteEnvolvida: any }> {
+  const response = await api.post<{ message: string; parteEnvolvida: any }>(
+    "/parteenvolvido/add",
+    dto
+  );
+  return response.data;
+}
+
+export const removeParteEnvolvida = async (
+  processoId: number,
+  parteEnvolvidaId: number
+): Promise<{ message: string }> => {
+  const response = await api.delete<{ message: string }>(
+    `/parteenvolvido/remove/${processoId}/${parteEnvolvidaId}`
+  );
+  return response.data;
+};
+
 
 export default api;
