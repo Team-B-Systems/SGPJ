@@ -111,6 +111,7 @@ export interface AuthResponse {
 
 export interface GetFuncionariosResponse {
   funcionarios: User[];
+}
 
 export interface ProcessoListResponse {
   processes: Processo[];
@@ -204,6 +205,8 @@ export async function getFuncionario(): Promise<User[]> {
 
 export async function searchFuncionario(email: string): Promise<User> {
   const response = await api.patch<User>("/admin/pesquisarfuncionario", { email });
+  return response.data;
+}
 
 export const getProcessos = async (
   page: number = 1,
