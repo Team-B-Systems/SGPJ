@@ -1,101 +1,102 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Badge } from '../ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { 
-  Plus, 
-  Search, 
-  Edit, 
-  Eye, 
-  Archive, 
-  FileText, 
-  Calendar, 
-  Users 
-} from 'lucide-react';
-import { mockProcessos, mockDocumentos, mockReunioes, mockEnvolvidos, type Processo } from '../../lib/mock-data';
-import { ProcessForm } from './process-form';
-import { ProcessDetails } from './process-details';
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Badge } from "../ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
+import {
+  Plus,
+  Search,
+  Edit,
+  Eye,
+  Archive,
+} from "lucide-react";
+import { ProcessForm } from "./process-form";
+import { ProcessDetails } from "./process-details";
+import { useProcessos } from "../../lib/processos-context";
+import { Processo, registerProcess } from "../../lib/api";
 
 export function ProcessosPage() {
-  const [processos, setProcessos] = useState<Processo[]>(mockProcessos);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedProcess, setSelectedProcess] = useState<Processo | null>(null);
+  const { processos, loading, total, fetchProcessos } = useProcessos();
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedProcess, setSelectedProcess] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingProcess, setEditingProcess] = useState<Processo | null>(null);
 
-  const filteredProcessos = processos.filter(processo =>
-    processo.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    processo.numeroProcesso.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    processo.responsavel.toLowerCase().includes(searchTerm.toLowerCase())
+  // ✅ carregar processos ao montar
+  useEffect(() => {
+    fetchProcessos();
+  }, [fetchProcessos]);
+
+  const filteredProcessos = processos.filter(
+    (processo) =>
+      processo.assunto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      processo.numeroProcesso.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      processo.tipoProcesso.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const handleCreateProcess = (processData: Omit<Processo, 'id'>) => {
-    const newProcess: Processo = {
-      ...processData,
-      id: (processos.length + 1).toString(),
-    };
-    setProcessos([...processos, newProcess]);
-    setShowForm(false);
-  };
-
-  const handleEditProcess = (processData: Omit<Processo, 'id'>) => {
-    if (editingProcess) {
-      const updatedProcessos = processos.map(p =>
-        p.id === editingProcess.id ? { ...processData, id: editingProcess.id } : p
-      );
-      setProcessos(updatedProcessos);
-      setEditingProcess(null);
-      setShowForm(false);
-    }
-  };
-
-  const handleArchiveProcess = (id: string) => {
-    const updatedProcessos = processos.map(p =>
-      p.id === id ? { ...p, status: 'arquivado' as const } : p
-    );
-    setProcessos(updatedProcessos);
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'ativo':
-        return <Badge className="bg-green-100 text-green-800">Ativo</Badge>;
-      case 'pendente':
-        return <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
-      case 'arquivado':
-        return <Badge className="bg-gray-100 text-gray-800">Arquivado</Badge>;
+      case "Aberto":
+        return <Badge className="bg-green-100 text-green-800">Aberto</Badge>;
+      case "EmAndamento":
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800">Em andamento</Badge>
+        );
+      case "Fechado":
+        return <Badge className="bg-gray-100 text-gray-800">Fechado</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
 
-  const getPriorityBadge = (prioridade: string) => {
-    switch (prioridade) {
-      case 'alta':
-        return <Badge variant="destructive">Alta</Badge>;
-      case 'media':
-        return <Badge variant="secondary">Média</Badge>;
-      case 'baixa':
-        return <Badge variant="outline">Baixa</Badge>;
-      default:
-        return <Badge variant="outline">{prioridade}</Badge>;
+  // Criar processo
+  const handleCreateProcess = async (processData: Omit<Processo, "id">) => {
+    try {
+      await registerProcess({
+        assunto: processData.assunto,
+        tipo: processData.tipoProcesso,
+      })
+      await fetchProcessos(); // recarregar lista
+    } catch (error) {
+      console.error("Erro ao criar processo:", error);
+    } finally {
+      setShowForm(false);
     }
   };
 
-  const getProcessDocuments = (processoId: string) => {
-    return mockDocumentos.filter(doc => doc.processoId === processoId);
-  };
-
-  const getProcessMeetings = (processoId: string) => {
-    return mockReunioes.filter(reuniao => reuniao.processoId === processoId);
-  };
-
-  const getProcessInvolved = (processoId: string) => {
-    return mockEnvolvidos.filter(envolvido => envolvido.processoId === processoId);
+  // Editar processo
+  const handleEditProcess = async (processData: Omit<Processo, "id">) => {
+    if (editingProcess) {
+      try {
+        console.log({ ...processData })
+        setShowForm(false);
+      } catch (error) {
+        console.error("Erro ao atualizar processo:", error);
+      }
+    }
   };
 
   return (
@@ -108,7 +109,12 @@ export function ProcessosPage() {
             Gerencie todos os processos jurídicos do sistema
           </p>
         </div>
-        <Button onClick={() => { setShowForm(true); setEditingProcess(null); }}>
+        <Button
+          onClick={() => {
+            setShowForm(true);
+            setEditingProcess(null);
+          }}
+        >
           <Plus className="w-4 h-4 mr-2" />
           Novo Processo
         </Button>
@@ -123,13 +129,16 @@ export function ProcessosPage() {
           <div className="flex gap-4">
             <div className="flex-1">
               <Input
-                placeholder="Buscar por título, número do processo ou responsável..."
+                placeholder="Buscar por assunto ou número..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="max-w-md"
               />
             </div>
-            <Button variant="outline">
+            <Button
+              variant="outline"
+              onClick={() => fetchProcessos()} // 🔹 recarrega da API
+            >
               <Search className="w-4 h-4 mr-2" />
               Buscar
             </Button>
@@ -142,7 +151,9 @@ export function ProcessosPage() {
         <CardHeader>
           <CardTitle>Lista de Processos</CardTitle>
           <CardDescription>
-            {filteredProcessos.length} processo(s) encontrado(s)
+            {loading
+              ? "Carregando..."
+              : `${filteredProcessos.length} de ${total} processo(s)`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -151,10 +162,9 @@ export function ProcessosPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Número</TableHead>
-                  <TableHead>Título</TableHead>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Prioridade</TableHead>
+                  <TableHead>Assunto</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Estado</TableHead>
                   <TableHead>Data Abertura</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
@@ -165,50 +175,46 @@ export function ProcessosPage() {
                     <TableCell className="font-mono">
                       {processo.numeroProcesso}
                     </TableCell>
+                    <TableCell>{processo.assunto}</TableCell>
+                    <TableCell>{processo.tipoProcesso}</TableCell>
+                    <TableCell>{getStatusBadge(processo.estado)}</TableCell>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">{processo.titulo}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {processo.categoria}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>{processo.responsavel}</TableCell>
-                    <TableCell>{getStatusBadge(processo.status)}</TableCell>
-                    <TableCell>{getPriorityBadge(processo.prioridade)}</TableCell>
-                    <TableCell>
-                      {new Date(processo.dataAbertura).toLocaleDateString('pt-BR')}
+                      {new Date(processo.dataAbertura).toLocaleDateString(
+                        "pt-BR"
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
+                        {/* Detalhes */}
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setSelectedProcess(processo)}
+                              onClick={() => setSelectedProcess(processo.id)}
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                          <DialogContent className="w-[90vw] max-w-none max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
                               <DialogTitle>Detalhes do Processo</DialogTitle>
                               <DialogDescription>
-                                {processo.numeroProcesso} - {processo.titulo}
+                                {processo.numeroProcesso} - {processo.assunto}
                               </DialogDescription>
                             </DialogHeader>
-                            {selectedProcess && (
+                            {selectedProcess === processo.id && (
                               <ProcessDetails
-                                processo={selectedProcess}
-                                documentos={getProcessDocuments(selectedProcess.id)}
-                                reunioes={getProcessMeetings(selectedProcess.id)}
-                                envolvidos={getProcessInvolved(selectedProcess.id)}
+                                processo={processo}
+                                documentos={processo.documentos}
+                                reunioes={processo.reunioes}
+                                envolvidos={processo.envolvidos}
                               />
                             )}
                           </DialogContent>
                         </Dialog>
 
+                        {/* Editar */}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -220,12 +226,9 @@ export function ProcessosPage() {
                           <Edit className="w-4 h-4" />
                         </Button>
 
-                        {processo.status !== 'arquivado' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleArchiveProcess(processo.id)}
-                          >
+                        {/* Arquivar */}
+                        {processo.estado !== "Encerrado" && (
+                          <Button variant="ghost" size="sm">
                             <Archive className="w-4 h-4" />
                           </Button>
                         )}
@@ -244,23 +247,29 @@ export function ProcessosPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editingProcess ? 'Editar Processo' : 'Novo Processo'}
+              {editingProcess ? "Editar Processo" : "Novo Processo"}
             </DialogTitle>
             <DialogDescription>
-              {editingProcess 
-                ? 'Atualize as informações do processo' 
-                : 'Preencha os dados para registrar um novo processo'
-              }
+              {editingProcess
+                ? "Atualize as informações do processo"
+                : "Preencha os dados para registrar um novo processo"}
             </DialogDescription>
           </DialogHeader>
+
           <ProcessForm
-            processo={editingProcess}
-            onSubmit={editingProcess ? handleEditProcess : handleCreateProcess}
-            onCancel={() => {
-              setShowForm(false);
-              setEditingProcess(null);
-            }}
-          />
+          processo={editingProcess}
+          onSubmit={(data) => {
+            if (editingProcess) {
+              handleEditProcess(data);
+            } else {
+              handleCreateProcess(data);
+            }
+          }}
+          onCancel={() => {
+            setEditingProcess(null);
+            setShowForm(false);
+          }}
+        />
         </DialogContent>
       </Dialog>
     </div>

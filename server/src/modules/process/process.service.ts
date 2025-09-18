@@ -1,4 +1,4 @@
-import { EstadoProcesso, PrismaClient } from "@prisma/client";
+import { EstadoProcesso, PrismaClient, Reuniao } from "@prisma/client";
 import ApiException from "../../common/Exceptions/api.exception";
 import { RegisterDTO } from "./dto/register.dto";
 import { EditDTO } from "./dto/edit.dto";
@@ -78,9 +78,9 @@ export const getProcessByNumber = async (userId: number, processNumber: string) 
     return process;
 }
 
-export const listProcesses = async (userId: number, page: number = 1, pageSize: number = 10, filter?: { estado?: EstadoProcesso, tipoProcesso?: string }) => {
+export const listProcesses = async (userId: number, isChefe: boolean, page: number = 1, pageSize: number = 10, filter?: { estado?: EstadoProcesso, tipoProcesso?: string }) => {
     const skip = (page - 1) * pageSize;
-    const whereClause: any = { responsavelId: userId };
+    const whereClause: any = isChefe ? {} : { responsavelId: userId };
 
     if (filter) {
         if (filter.estado) {
@@ -97,6 +97,54 @@ export const listProcesses = async (userId: number, page: number = 1, pageSize: 
             skip,
             take: pageSize,
             orderBy: { dataAbertura: 'desc' },
+            select: {
+                id: true,
+                createdAt: true,
+                updatedAt: true,
+                numeroProcesso: true,
+                dataAbertura: true,
+                assunto: true,
+                tipoProcesso: true,
+                estado: true,
+                dataEncerramento: true,
+                responsavel: true,
+                documentos: true,
+                parecer: true,
+                envolvidos: {
+                    include: {
+                        envolvido: true
+                    }
+                },
+                reunioes: {
+                    select: {
+                        id: true,
+                        createdAt: true,
+                        updatedAt: true,
+                        local: true,
+                        estado: true,
+                        documento: true,
+                        dataHora: true,
+                        processoId: true,
+                        comissao: {
+                            select: {
+                                id: true,
+                                createdAt: true,
+                                updatedAt: true,
+                                nome: true,
+                                dataCriacao: true,
+                                descricao: true,
+                                estado: true,
+                                dataEncerramento: true,
+                                funcionarios: {
+                                    include: {
+                                        funcionario: true,
+                                    }
+                                },
+                            }
+                        },
+                    },
+                },
+            },
         }),
         prisma.processoJuridico.count({ where: whereClause }),
     ]);

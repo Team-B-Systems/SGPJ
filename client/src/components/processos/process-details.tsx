@@ -1,20 +1,20 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { 
-  Download, 
-  FileText, 
-  Calendar, 
-  MapPin, 
-  Users, 
-  Mail, 
-  Phone 
+import {
+  Download,
+  FileText,
+  Calendar,
+  MapPin,
+  Users,
+  Mail,
+  Phone
 } from 'lucide-react';
-import { type Processo, type Documento, type Reuniao, type Envolvido } from '../../lib/mock-data';
 import { EnvolvidosProcesso } from '../envolvidos/envolvidos-processo';
+import { Documento, Envolvido, Processo, Reuniao } from '../../lib/api';
 
 interface ProcessDetailsProps {
   processo: Processo;
@@ -24,7 +24,7 @@ interface ProcessDetailsProps {
   onUpdateEnvolvidos?: (envolvidos: Envolvido[]) => void;
 }
 
-export function ProcessDetails({ processo, documentos, reunioes, envolvidos, onUpdateEnvolvidos }: ProcessDetailsProps) {
+export const ProcessDetails = forwardRef<HTMLDivElement, ProcessDetailsProps>(({ processo, documentos, reunioes, envolvidos, onUpdateEnvolvidos }, ref) => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'ativo':
@@ -73,14 +73,14 @@ export function ProcessDetails({ processo, documentos, reunioes, envolvidos, onU
         <CardHeader>
           <div className="flex justify-between items-start">
             <div>
-              <CardTitle>{processo.titulo}</CardTitle>
+              <CardTitle>{processo.assunto}</CardTitle>
               <CardDescription className="mt-2">
                 <span className="font-mono text-sm">{processo.numeroProcesso}</span>
               </CardDescription>
             </div>
             <div className="flex space-x-2">
-              {getStatusBadge(processo.status)}
-              {getPriorityBadge(processo.prioridade)}
+              {getStatusBadge(processo.estado)}
+              {getPriorityBadge(['alta', 'media', 'baixa'].sort(() => 0.5 - Math.random())[0])}
             </div>
           </div>
         </CardHeader>
@@ -89,17 +89,17 @@ export function ProcessDetails({ processo, documentos, reunioes, envolvidos, onU
             <div className="space-y-4">
               <div>
                 <h4 className="font-medium mb-1">Descrição</h4>
-                <p className="text-sm text-muted-foreground">{processo.descricao}</p>
+                <p className="text-sm text-muted-foreground">Sem descrição</p>
               </div>
               <div>
                 <h4 className="font-medium mb-1">Categoria</h4>
-                <p className="text-sm">{processo.categoria}</p>
+                <p className="text-sm">{processo.tipoProcesso}</p>
               </div>
             </div>
             <div className="space-y-4">
               <div>
                 <h4 className="font-medium mb-1">Responsável</h4>
-                <p className="text-sm">{processo.responsavel}</p>
+                <p className="text-sm">{processo.responsavel.nome} | {processo.numeroProcesso}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -108,7 +108,7 @@ export function ProcessDetails({ processo, documentos, reunioes, envolvidos, onU
                 </div>
                 <div>
                   <h4 className="font-medium mb-1">Última Atualização</h4>
-                  <p className="text-sm">{new Date(processo.dataUltimaAtualizacao).toLocaleDateString('pt-BR')}</p>
+                  <p className="text-sm">{new Date(processo.updatedAt).toLocaleDateString('pt-BR')}</p>
                 </div>
               </div>
             </div>
@@ -168,9 +168,9 @@ export function ProcessDetails({ processo, documentos, reunioes, envolvidos, onU
                         </TableCell>
                         <TableCell>{doc.tamanho}</TableCell>
                         <TableCell>
-                          {new Date(doc.dataUpload).toLocaleDateString('pt-BR')}
+                          {new Date(doc.createdAt).toLocaleDateString('pt-BR')}
                         </TableCell>
-                        <TableCell>{doc.uploadedBy}</TableCell>
+                        <TableCell>{processo.responsavel.nome}</TableCell>
                         <TableCell>
                           <Button variant="ghost" size="sm">
                             <Download className="w-4 h-4" />
@@ -204,14 +204,14 @@ export function ProcessDetails({ processo, documentos, reunioes, envolvidos, onU
                     <Card key={reuniao.id}>
                       <CardContent className="pt-6">
                         <div className="flex justify-between items-start mb-4">
-                          <h4 className="font-medium">{reuniao.titulo}</h4>
-                          {getMeetingStatusBadge(reuniao.status)}
+                          <h4 className="font-medium">Reunião do processo: {processo.numeroProcesso}</h4>
+                          {getMeetingStatusBadge(reuniao.estado)}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                           <div className="space-y-2">
                             <div className="flex items-center">
                               <Calendar className="w-4 h-4 mr-2 text-muted-foreground" />
-                              {new Date(reuniao.data).toLocaleDateString('pt-BR')} às {reuniao.hora}
+                              {new Date(reuniao.dataHora).toLocaleDateString('pt-BR')}
                             </div>
                             <div className="flex items-center">
                               <MapPin className="w-4 h-4 mr-2 text-muted-foreground" />
@@ -221,9 +221,9 @@ export function ProcessDetails({ processo, documentos, reunioes, envolvidos, onU
                           <div className="space-y-2">
                             <div className="flex items-center">
                               <Users className="w-4 h-4 mr-2 text-muted-foreground" />
-                              {reuniao.participantes.join(', ')}
+                              {reuniao.comissao.funcionarios?.map(f => f.funcionario.nome).join(', ')}
                             </div>
-                            {reuniao.ataAnexada && (
+                            {reuniao.documento && (
                               <div className="flex items-center">
                                 <FileText className="w-4 h-4 mr-2 text-muted-foreground" />
                                 Ata anexada
@@ -233,7 +233,7 @@ export function ProcessDetails({ processo, documentos, reunioes, envolvidos, onU
                         </div>
                         <div className="mt-4">
                           <h5 className="font-medium mb-2">Pauta:</h5>
-                          <p className="text-sm text-muted-foreground">{reuniao.pauta}</p>
+                          <p className="text-sm text-muted-foreground">{processo.assunto}</p>
                         </div>
                       </CardContent>
                     </Card>
@@ -250,12 +250,12 @@ export function ProcessDetails({ processo, documentos, reunioes, envolvidos, onU
 
         <TabsContent value="envolvidos" className="space-y-4">
           <EnvolvidosProcesso
-            processoId={processo.id}
+            processo={processo}
             envolvidos={envolvidos}
-            onUpdateEnvolvidos={onUpdateEnvolvidos || (() => {})}
+            onUpdateEnvolvidos={onUpdateEnvolvidos || (() => { })}
           />
         </TabsContent>
       </Tabs>
     </div>
   );
-}
+})

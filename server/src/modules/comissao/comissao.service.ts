@@ -58,12 +58,25 @@ export const editar = async (comissaoId: number, dto: comissaoDto) => {
 };
 
 export const visualizar = async () => {
-    const queixas = await prisma.comissao.findMany({});
+    const comissoes = await prisma.comissao.findMany({
+        include: {
+            funcionarios: true,
+        },
+    });
 
-    if (!queixas) {
-        throw new ApiException(404, "Comissão não encontradas");
+    if (!comissoes) {
+        throw new ApiException(404, "Comissões não encontradas");
     }
-    return queixas;
+    return comissoes.map((comissao) => {
+        return {
+            id: comissao.id,
+            nome: comissao.nome,
+            descricao: comissao.descricao,
+            estado: comissao.estado,
+            dataEncerramento: comissao.dataEncerramento,
+            funcionarios: comissao.funcionarios,
+        }
+    })
 };
 
 export const pesquisarPorId = async (comissaoId: number) => {

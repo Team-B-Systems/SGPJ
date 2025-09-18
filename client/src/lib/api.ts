@@ -30,6 +30,80 @@ export interface User {
   senha: string;
 }
 
+export interface Processo {
+  id: number;
+  createdAt: string;
+  updatedAt: string;
+  numeroProcesso: string;
+  dataAbertura: string;
+  assunto: string;
+  tipoProcesso: string;
+  estado: string;
+  dataEncerramento: string | null;
+  responsavel: User;
+  documentos: Documento[];
+  parecer: Documento | null;
+  envolvidos: Envolvido[];
+  reunioes: Reuniao[];
+}
+
+export interface Documento {
+  id: number;
+  createdAt: string;
+  updatedAt: string;
+  titulo: string;
+  descricao: string;
+  tamanho: string;
+  tipoDocumento: string;
+}
+
+export interface Envolvido {
+  id: number;
+  createdAt: string;
+  updatedAt: string;
+  envolvidoId: number;
+  processoJuridicoId: number;
+  envolvido: {
+    id: number;
+    createdAt: string;
+    updatedAt: string;
+    nome: string;
+    numeroIdentificacao: string;
+    papelNoProcesso: string;
+  }
+}
+
+interface Comissao {
+  id: number;
+  createdAt: string;
+  updatedAt: string;
+  nome: string;
+  descricao: string;
+  estado: string;
+  dataEncerramento: string;
+  funcionarios: {
+    id: number;
+    createdAt: string;
+    updatedAt: string;
+    comissaoId: number;
+    funcionarioId: number;
+    papel: string;
+    funcionario: User;
+  }[];
+}
+
+export interface Reuniao {
+  id: number;
+  createdAt: string;
+  updatedAt: string;
+  local: string;
+  estado: string;
+  documento?: Documento;
+  comissao: Comissao;
+  dataHora: string;
+  processoId: number;
+}
+
 export interface AuthResponse {
   token: string;
   user: User;
@@ -37,6 +111,13 @@ export interface AuthResponse {
 
 export interface GetFuncionariosResponse {
   funcionarios: User[];
+
+export interface ProcessoListResponse {
+  processes: Processo[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 // --------- AUTH ---------
@@ -123,6 +204,41 @@ export async function getFuncionario(): Promise<User[]> {
 
 export async function searchFuncionario(email: string): Promise<User> {
   const response = await api.patch<User>("/admin/pesquisarfuncionario", { email });
+
+export const getProcessos = async (
+  page: number = 1,
+  pageSize: number = 10
+): Promise<ProcessoListResponse> => {
+  const response = await api.get<ProcessoListResponse>(
+    `/process/list?page=${page}&pageSize=${pageSize}`
+  );
+  return response.data;
+};
+
+export async function registerProcess(data: {
+  assunto: string;
+  tipo: string;
+}): Promise<{
+  process: Processo;
+  message: string;
+}> {
+  const response = await api.post("/process/register", data);
+
+  return response.data;
+}
+
+export async function editProcess(
+  processId: number,
+  data: {
+    assunto?: string;
+    tipoProcesso?: string;
+    estado?: string;
+  }
+): Promise<{
+  process: Processo;
+  message: string;
+}> {
+  const response = await api.patch(`/process/edit/${processId}`, data);
   return response.data;
 }
 

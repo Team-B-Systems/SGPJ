@@ -6,51 +6,44 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
-import { Envolvido, mockProcessos, mockFuncionarios } from '../../lib/mock-data';
 import { useAuth } from '../../lib/auth-context';
+import { Envolvido } from '../../lib/api';
+import { useProcessos } from '../../lib/processos-context';
 
 interface EnvolvidoFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (envolvido: Omit<Envolvido, 'id'>) => void;
   envolvido?: Envolvido;
-  processoId?: string;
+  processoId?: number;
 }
 
 export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId }: EnvolvidoFormProps) {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
-    processoId: processoId || '',
+    processoId: processoId || -1,
     nome: '',
-    tipo: 'externo' as 'interno' | 'externo',
-    parte: 'ativa' as 'ativa' | 'passiva',
-    cargo: '',
-    contato: '',
-    email: ''
+    papelNoProcesso: '',
+    numeroIdentificacao: '',
   });
+  const { processos } = useProcessos();
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (envolvido) {
       setFormData({
-        processoId: envolvido.processoId,
-        nome: envolvido.nome,
-        tipo: envolvido.tipo,
-        parte: envolvido.parte,
-        cargo: envolvido.cargo || '',
-        contato: envolvido.contato,
-        email: envolvido.email
+        processoId: envolvido.envolvido.id,
+        nome: envolvido.envolvido.nome,
+        papelNoProcesso: envolvido.envolvido.papelNoProcesso,
+        numeroIdentificacao: envolvido.envolvido.numeroIdentificacao
       });
     } else {
       setFormData({
-        processoId: processoId || '',
+        processoId: processoId || -1,
         nome: '',
-        tipo: 'externo',
-        parte: 'ativa',
-        cargo: '',
-        contato: '',
-        email: ''
+        papelNoProcesso: '',
+        numeroIdentificacao: ''
       });
     }
     setErrors({});
@@ -67,17 +60,11 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
       newErrors.nome = 'Nome é obrigatório';
     }
 
-    if (!formData.contato.trim()) {
-      newErrors.contato = 'Contato é obrigatório';
+    if (!formData.numeroIdentificacao.trim()) {
+      newErrors.numeroIdentificacao = 'numeroIdentificacao é obrigatório';
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email é obrigatório';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Email inválido';
-    }
-
-    if (formData.tipo === 'interno' && !formData.cargo?.trim()) {
+    if (formData.papelNoProcesso === '') {
       newErrors.cargo = 'Cargo é obrigatório para funcionários internos';
     }
 
@@ -87,35 +74,38 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
-    onSubmit({
-      processoId: formData.processoId,
-      nome: formData.nome.trim(),
-      tipo: formData.tipo,
-      parte: formData.parte,
-      cargo: formData.cargo?.trim(),
-      contato: formData.contato.trim(),
-      email: formData.email.trim()
-    });
+    
+    /*onSubmit({
+      createdAt: envolvido ? envolvido.createdAt : new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      envolvido: {
+        createdAt: envolvido ? envolvido.createdAt : new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        nome: formData.nome.trim(),
+        numeroIdentificacao: formData.numeroIdentificacao.trim(),
+        papelNoProcesso: formData.papelNoProcesso,
+      }
+    });*/
 
     onClose();
   };
 
-  const handleFuncionarioSelect = (funcionarioId: string) => {
+  /*const handleFuncionarioSelect = (funcionarioId: string) => {
     const funcionario = mockFuncionarios.find(f => f.id === funcionarioId);
     if (funcionario) {
       setFormData({
         ...formData,
         nome: funcionario.nome,
-        cargo: funcionario.cargo,
-        email: funcionario.email
+        papelNoProcesso: '',
+        numeroIdentificacao: funcionario.email,
       });
     }
-  };
+  };*/
 
   const isReadOnly = user?.role === 'Chefe';
 
@@ -124,10 +114,10 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isReadOnly 
+            {isReadOnly
               ? 'Visualizar Envolvido'
-              : envolvido 
-                ? 'Editar Envolvido' 
+              : envolvido
+                ? 'Editar Envolvido'
                 : 'Adicionar Envolvido'
             }
           </DialogTitle>
@@ -145,9 +135,9 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
                 <SelectValue placeholder="Selecione um processo" />
               </SelectTrigger>
               <SelectContent>
-                {mockProcessos.map((processo) => (
+                {processos.map((processo) => (
                   <SelectItem key={processo.id} value={processo.id}>
-                    {processo.numeroProcesso} - {processo.titulo}
+                    {processo.numeroProcesso} - {processo.assunto}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -158,9 +148,9 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
           <div>
             <Label>Tipo de Envolvido *</Label>
             <RadioGroup
-              value={formData.tipo}
-              onValueChange={(value: 'interno' | 'externo') => 
-                setFormData({ ...formData, tipo: value, nome: '', cargo: '', email: '' })
+              value={formData.papelNoProcesso}
+              onValueChange={(value: 'interno' | 'externo') =>
+                setFormData({ ...formData, papelNoProcesso: value, nome: '', numeroIdentificacao: '' })
               }
               className="flex gap-6 mt-2"
               disabled={isReadOnly}
@@ -176,24 +166,6 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
             </RadioGroup>
           </div>
 
-          {formData.tipo === 'interno' && !isReadOnly && (
-            <div>
-              <Label htmlFor="funcionario">Selecionar Funcionário</Label>
-              <Select onValueChange={handleFuncionarioSelect}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um funcionário" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockFuncionarios.map((funcionario) => (
-                    <SelectItem key={funcionario.id} value={funcionario.id}>
-                      {funcionario.nome} - {funcionario.cargo}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
           <div>
             <Label htmlFor="nome">Nome *</Label>
             <Input
@@ -207,63 +179,15 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
           </div>
 
           <div>
-            <Label>Parte no Processo *</Label>
-            <RadioGroup
-              value={formData.parte}
-              onValueChange={(value: 'ativa' | 'passiva') => setFormData({ ...formData, parte: value })}
-              className="flex gap-6 mt-2"
-              disabled={isReadOnly}
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="ativa" id="ativa" />
-                <Label htmlFor="ativa">Parte Ativa (Requerente)</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="passiva" id="passiva" />
-                <Label htmlFor="passiva">Parte Passiva (Requerido)</Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          {(formData.tipo === 'interno' || formData.cargo) && (
-            <div>
-              <Label htmlFor="cargo">
-                Cargo {formData.tipo === 'interno' ? '*' : ''}
-              </Label>
-              <Input
-                id="cargo"
-                value={formData.cargo}
-                onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
-                placeholder="Cargo ou função"
-                disabled={isReadOnly}
-              />
-              {errors.cargo && <p className="text-destructive mt-1">{errors.cargo}</p>}
-            </div>
-          )}
-
-          <div>
-            <Label htmlFor="contato">Contato *</Label>
+            <Label htmlFor="numeroIdentificacao">Numer Identificacao *</Label>
             <Input
-              id="contato"
-              value={formData.contato}
-              onChange={(e) => setFormData({ ...formData, contato: e.target.value })}
+              id="numeroIdentificacao"
+              value={formData.numeroIdentificacao}
+              onChange={(e) => setFormData({ ...formData, numeroIdentificacao: e.target.value })}
               placeholder="Telefone ou celular"
               disabled={isReadOnly}
             />
-            {errors.contato && <p className="text-destructive mt-1">{errors.contato}</p>}
-          </div>
-
-          <div>
-            <Label htmlFor="email">Email *</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="email@exemplo.com"
-              disabled={isReadOnly}
-            />
-            {errors.email && <p className="text-destructive mt-1">{errors.email}</p>}
+            {errors.numeroIdentificacao && <p className="text-destructive mt-1">{errors.numeroIdentificacao}</p>}
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
