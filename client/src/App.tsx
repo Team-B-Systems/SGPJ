@@ -19,6 +19,7 @@ import { ComissoesPage } from "./components/comissoes/comissoes-page";
 import { EnvolvidosPage } from "./components/envolvidos/envolvidos-page";
 import { FuncionariosProvider } from "./lib/funcionarios-context";
 import { ProcessosProvider } from "./lib/processos-context";
+import { QueixaProvider } from "./lib/queixa-context";
 
 function PrivateRoutes() {
   const { isAuthenticated, loading } = useAuth();
@@ -66,10 +67,11 @@ export default function App() {
     <AuthProvider>
       <FuncionariosProvider>
         <ProcessosProvider>
-        <AppContent />
-          </ProcessosProvider>
+          <QueixaProvider>
+            <AppContent />
+          </QueixaProvider>
+        </ProcessosProvider>
       </FuncionariosProvider>
     </AuthProvider>
-
   );
 }

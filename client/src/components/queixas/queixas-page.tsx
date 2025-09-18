@@ -1,60 +1,69 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import React, { use, useEffect, useMemo, useState } from 'react';
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
-import { 
-  Plus, 
-  Search, 
-  Edit, 
-  Eye, 
-  AlertTriangle,
-  CheckCircle,
-  Clock
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '../ui/table';
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
+} from '../ui/dialog';
+import {
+  Plus, Search, Edit, Eye, AlertTriangle, CheckCircle, Clock,
+  Download,
 } from 'lucide-react';
-import { mockQueixas, type Queixa } from '../../lib/mock-data';
 import { QueixaForm } from './queixa-form';
+import { Queixa} from '../../lib/api';
+import { useQueixa } from '../../lib/queixa-context';
+import { useProcessos } from '../../lib/processos-context';
 
 export function QueixasPage() {
-  const [queixas, setQueixas] = useState<Queixa[]>(mockQueixas);
+  const { queixas, fetchQueixas, addQueixa, updateQueixa, baixarDocumento } = useQueixa();
+  const { fetchProcessos} = useProcessos();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedQueixa, setSelectedQueixa] = useState<Queixa | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingQueixa, setEditingQueixa] = useState<Queixa | null>(null);
 
-  const filteredQueixas = queixas.filter(queixa =>
-    queixa.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    queixa.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    queixa.requerente.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    fetchQueixas();
+  }, [fetchQueixas]);
 
-  const handleCreateQueixa = (queixaData: Omit<Queixa, 'id'>) => {
-    const newQueixa: Queixa = {
-      ...queixaData,
-      id: (queixas.length + 1).toString(),
+  useEffect(() => {
+    fetchProcessos();
+  }, [fetchProcessos]);
+
+  const filteredQueixas = useMemo(() => {
+    return queixas.filter((q) =>
+      q.descricao.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [queixas, searchTerm]);
+
+  const handleCreateQueixa = async (data: Queixa) => {
+    const queixa: Queixa = {
+      id: data.id, 
+      descricao: data.descricao,
+      estado: data.estado,
+      dataEntrada: new Date(data.dataEntrada).toISOString(),
+      ficheiro: data.ficheiro, 
+      pPassivaId: data.pPassivaId,
+      funcionarioId: data.funcionarioId,
     };
-    setQueixas([...queixas, newQueixa]);
+    await addQueixa(queixa);
     setShowForm(false);
   };
 
-  const handleEditQueixa = (queixaData: Omit<Queixa, 'id'>) => {
-    if (editingQueixa) {
-      const updatedQueixas = queixas.map(q =>
-        q.id === editingQueixa.id ? { ...queixaData, id: editingQueixa.id } : q
-      );
-      setQueixas(updatedQueixas);
-      setEditingQueixa(null);
-      setShowForm(false);
-    }
-  };
+  const handleEditQueixa = async (data: Queixa) => {
+    if (!editingQueixa?.id) return;
 
-  const handleStatusChange = (id: string, newStatus: 'aberta' | 'em_analise' | 'resolvida') => {
-    const updatedQueixas = queixas.map(q =>
-      q.id === id ? { ...q, status: newStatus } : q
-    );
-    setQueixas(updatedQueixas);
+    await updateQueixa(editingQueixa.id?.toString(), {
+      ...data,
+    id: editingQueixa.id,});
+    setEditingQueixa(null);
+    setShowForm(false);
   };
 
   const getStatusBadge = (status: string) => {
@@ -83,14 +92,16 @@ export function QueixasPage() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'aberta':
+  const getStatusIcon = (estado: string) => {
+    switch (estado) {
+      case 'Pendente':
         return <AlertTriangle className="w-4 h-4 text-red-500" />;
-      case 'em_analise':
+      case 'EmAnalise':
         return <Clock className="w-4 h-4 text-yellow-500" />;
-      case 'resolvida':
+      case 'Aceite':
         return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'Rejeitada':
+        return <AlertTriangle className="w-4 h-4 text-red-500" />;
       default:
         return null;
     }
@@ -98,14 +109,15 @@ export function QueixasPage() {
 
   const stats = {
     total: queixas.length,
-    abertas: queixas.filter(q => q.status === 'aberta').length,
-    emAnalise: queixas.filter(q => q.status === 'em_analise').length,
-    resolvidas: queixas.filter(q => q.status === 'resolvida').length,
+    pendente: queixas.filter((q) => q.estado === 'Pendente').length,
+    aceite: queixas.filter((q) => q.estado === 'Aceite').length,
+    emAnalise: queixas.filter((q) => q.estado === 'EmAnalise').length,
+    rejeitada: queixas.filter((q) => q.estado === 'Rejeitada').length,
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Gestão de Queixas</h1>
@@ -119,68 +131,41 @@ export function QueixasPage() {
         </Button>
       </div>
 
-      {/* Statistics */}
+      {/* Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">queixas registradas</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Abertas</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.abertas}</div>
-            <p className="text-xs text-muted-foreground">aguardando análise</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Em Análise</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{stats.emAnalise}</div>
-            <p className="text-xs text-muted-foreground">sendo analisadas</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resolvidas</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.resolvidas}</div>
-            <p className="text-xs text-muted-foreground">concluídas</p>
-          </CardContent>
-        </Card>
+        {[
+          { title: 'Total', value: stats.total, icon: <AlertTriangle className="h-4 w-4 text-muted-foreground" /> },
+           { title: 'Pendentes', value: stats.pendente, icon: <AlertTriangle className="h-4 w-4 text-red-500" /> },
+          { title: 'Em Análise', value: stats.emAnalise, icon: <Clock className="h-4 w-4 text-yellow-500" /> },
+          { title: 'Aceites', value: stats.aceite, icon: <CheckCircle className="h-4 w-4 text-green-500" /> },
+           { title: 'Rejeitadas', value: stats.rejeitada, icon: <AlertTriangle className="h-4 w-4 text-red-500" /> },
+        ].map((s) => (
+          <Card key={s.title}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{s.title}</CardTitle>
+              {s.icon}
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{s.value}</div>
+              <p className="text-xs text-muted-foreground">queixas</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Search */}
+      {/* Pesquisa */}
       <Card>
         <CardHeader>
           <CardTitle>Pesquisar Queixas</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Buscar por título, descrição ou requerente..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-md"
-              />
-            </div>
+            <Input
+              placeholder="Buscar por título ou descrição..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-md"
+            />
             <Button variant="outline">
               <Search className="w-4 h-4 mr-2" />
               Buscar
@@ -189,7 +174,7 @@ export function QueixasPage() {
         </CardContent>
       </Card>
 
-      {/* Complaints Table */}
+      {/* Tabela */}
       <Card>
         <CardHeader>
           <CardTitle>Lista de Queixas</CardTitle>
@@ -202,34 +187,29 @@ export function QueixasPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Título</TableHead>
-                  <TableHead>Requerente</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Prioridade</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Estado</TableHead>
                   <TableHead>Data Abertura</TableHead>
+                  <TableHead>Ficheiro Anexado</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredQueixas.map((queixa) => (
-                  <TableRow key={queixa.id}>
+                {filteredQueixas.map((q, index) => (
+                  <TableRow key={index}>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        {getStatusIcon(queixa.status)}
+                        {getStatusIcon(q.estado)}
                         <div>
-                          <p className="font-medium">{queixa.titulo}</p>
                           <p className="text-sm text-muted-foreground truncate max-w-xs">
-                            {queixa.descricao}
+                            {q.descricao}
                           </p>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>{queixa.requerente}</TableCell>
-                    <TableCell>{getStatusBadge(queixa.status)}</TableCell>
-                    <TableCell>{getPriorityBadge(queixa.prioridade)}</TableCell>
-                    <TableCell>
-                      {new Date(queixa.dataAbertura).toLocaleDateString('pt-BR')}
-                    </TableCell>
+                    <TableCell>{getStatusBadge(q.estado)}</TableCell>
+                    <TableCell>{new Date(q.dataEntrada).toLocaleDateString('pt-BR')}</TableCell>
+                    <TableCell>{q.ficheiro ? 'Sim' : 'Não'}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Dialog>
@@ -237,7 +217,7 @@ export function QueixasPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setSelectedQueixa(queixa)}
+                              onClick={() => setSelectedQueixa(q)}
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
@@ -246,72 +226,40 @@ export function QueixasPage() {
                             <DialogHeader>
                               <DialogTitle>Detalhes da Queixa</DialogTitle>
                               <DialogDescription>
-                                Informações completas sobre a queixa
+                                Informações completas
                               </DialogDescription>
                             </DialogHeader>
                             {selectedQueixa && (
                               <div className="space-y-4">
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <h3 className="font-semibold text-lg">{selectedQueixa.titulo}</h3>
-                                    <p className="text-muted-foreground">
-                                      Requerente: {selectedQueixa.requerente}
-                                    </p>
-                                  </div>
-                                  <div className="flex space-x-2">
-                                    {getStatusBadge(selectedQueixa.status)}
-                                    {getPriorityBadge(selectedQueixa.prioridade)}
-                                  </div>
-                                </div>
+                                <h2 className="text-lg font-semibold">Descrição</h2>
+                                <p>{selectedQueixa.descricao}</p>
+                                <h2 className="text-lg font-semibold">Data de Abertura</h2>
+                                 {new Date(selectedQueixa.dataEntrada).toLocaleDateString("pt-PT")}
+                                <h2 className="text-lg font-semibold">Estado</h2>
+                                <p>{selectedQueixa.estado}</p>
                                 
-                                <div>
-                                  <h4 className="font-medium mb-2">Descrição:</h4>
-                                  <p className="text-sm">{selectedQueixa.descricao}</p>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4 text-sm">
-                                  <div>
-                                    <h4 className="font-medium">Data de Abertura:</h4>
-                                    <p>{new Date(selectedQueixa.dataAbertura).toLocaleDateString('pt-BR')}</p>
-                                  </div>
-                                </div>
-
-                                <div className="flex justify-end space-x-2">
-                                  {selectedQueixa.status !== 'resolvida' && (
-                                    <>
-                                      {selectedQueixa.status === 'aberta' && (
-                                        <Button 
-                                          size="sm"
-                                          onClick={() => handleStatusChange(selectedQueixa.id, 'em_analise')}
-                                        >
-                                          Iniciar Análise
-                                        </Button>
-                                      )}
-                                      {selectedQueixa.status === 'em_analise' && (
-                                        <Button 
-                                          size="sm"
-                                          onClick={() => handleStatusChange(selectedQueixa.id, 'resolvida')}
-                                        >
-                                          Marcar como Resolvida
-                                        </Button>
-                                      )}
-                                    </>
-                                  )}
-                                </div>
                               </div>
                             )}
                           </DialogContent>
                         </Dialog>
-
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            setEditingQueixa(queixa);
+                            setEditingQueixa(q);
                             setShowForm(true);
                           }}
                         >
                           <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            baixarDocumento(q.id!);
+                          }}
+                        >
+                          <Download className="w-4 h-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -323,27 +271,25 @@ export function QueixasPage() {
         </CardContent>
       </Card>
 
-      {/* Complaint Form Dialog */}
+      {/* Formulário */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>
-              {editingQueixa ? 'Editar Queixa' : 'Nova Queixa'}
-            </DialogTitle>
+            <DialogTitle>{editingQueixa ? 'Editar Queixa' : 'Nova Queixa'}</DialogTitle>
             <DialogDescription>
-              {editingQueixa 
-                ? 'Atualize as informações da queixa' 
-                : 'Registre uma nova queixa no sistema'
-              }
+              {editingQueixa ? 'Atualize as informações da queixa' : 'Registre uma nova queixa'}
             </DialogDescription>
           </DialogHeader>
           <QueixaForm
-            queixa={editingQueixa}
+            queixa={editingQueixa ?? undefined}
             onSubmit={editingQueixa ? handleEditQueixa : handleCreateQueixa}
             onCancel={() => {
               setShowForm(false);
               setEditingQueixa(null);
             }}
+            funcionarios={[]} // Replace with actual data or state
+            partesPassivas={[]} // Replace with actual data or state
+            departamentos={[]} // Replace with actual data or state
           />
         </DialogContent>
       </Dialog>

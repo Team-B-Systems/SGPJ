@@ -71,7 +71,7 @@ export const cadastrarFuncionario = async (req: AuthRequest, res: Response) => {
 
 export const listarFuncionarios = async (req: AuthRequest, res: Response) => {
     try {
-        if (!req.user || req.user.role !== Role.Admin) {
+        if (!req.user) {
             return res.status(401).json({ error: "Não autorizado" })
         }
         const users = await adminService.listarFuncionarios();

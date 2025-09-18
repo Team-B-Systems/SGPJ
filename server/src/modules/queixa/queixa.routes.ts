@@ -1,11 +1,17 @@
 import { Router } from "express";
-import { cadastrar, editar, visualizar, pesquisar } from "./queixa.controller";
+import { cadastrar, editar, visualizar, baixarDocumento } from "./queixa.controller";
 import { authMiddleware } from "../../middlewares/auth.middleware";
+import multer from "multer";
 
 const router = Router();
 
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 },
+});
+
 router.post("/cadastrar", authMiddleware, cadastrar);
-router.post("/editar/:id", authMiddleware, editar);
+router.patch("/editar/:id", authMiddleware,  upload.single("ficheiro"), editar);
 router.get("/visualizar", authMiddleware, visualizar);
-router.post("/pesquisar/:id", authMiddleware, pesquisar);
+router.get("/downloadDocumento/:id", authMiddleware, baixarDocumento);
 export default router;
