@@ -53,7 +53,7 @@ export interface Documento {
   updatedAt: string;
   titulo: string;
   descricao: string;
-  tamanho: string;
+  tamanho: number;
   tipoDocumento: string;
 }
 
@@ -274,6 +274,43 @@ export const removeParteEnvolvida = async (
   );
   return response.data;
 };
+
+export async function attachDocument(data: {
+  processoId: number;
+  titulo: string;
+  descricao?: string;
+  tipoDocumento: string;
+  ficheiro: File;
+}): Promise<{ message: string; documento: Documento }> {
+  const formData = new FormData();
+
+  formData.append("processoId", data.processoId.toString());
+  formData.append("titulo", data.titulo);
+  if (data.descricao) formData.append("descricao", data.descricao);
+  formData.append("tipoDocumento", data.tipoDocumento);
+  formData.append("ficheiro", data.ficheiro);
+
+  const response = await api.post<{ message: string; documento: Documento }>(
+    "/documents/attach",
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
+  return response.data;
+}
+
+export async function downloadDocument(id: number): Promise<Blob> {
+  const response = await api.get(`/documents/download/${id}`, {
+    responseType: "blob", // 👈 garante que vem como ficheiro binário
+  });
+
+  return response.data;
+}
+
 
 
 export default api;

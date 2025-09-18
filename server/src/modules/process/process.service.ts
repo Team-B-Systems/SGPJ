@@ -120,7 +120,17 @@ export const listProcesses = async (userId: number, isChefe: boolean, page: numb
                 estado: true,
                 dataEncerramento: true,
                 responsavel: true,
-                documentos: true,
+                documentos: {
+                    select: {
+                        id: true,
+                        createdAt: true,
+                        updatedAt: true,
+                        titulo: true,
+                        descricao: true,
+                        ficheiro: true,
+                        tipoDocumento: true,
+                    }
+                },
                 parecer: true,
                 envolvidos: {
                     include: {
@@ -161,8 +171,16 @@ export const listProcesses = async (userId: number, isChefe: boolean, page: numb
         prisma.processoJuridico.count({ where: whereClause }),
     ]);
 
+    const response = processes.map(processo => ({
+        ...processo,
+        documentos: processo.documentos.map(({ ficheiro, ...doc }) => ({
+            ...doc,
+            tamanho: ficheiro?.length ?? 0,
+        })),
+    }));
+
     return {
-        processes,
+        processes: response,
         total,
         page,
         pageSize,
