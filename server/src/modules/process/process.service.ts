@@ -1,4 +1,4 @@
-import { EstadoProcesso, PrismaClient } from "@prisma/client";
+import { EstadoProcesso, PrismaClient, Reuniao } from "@prisma/client";
 import ApiException from "../../common/Exceptions/api.exception";
 import { RegisterDTO } from "./dto/register.dto";
 import { EditDTO } from "./dto/edit.dto";
@@ -9,8 +9,20 @@ const prisma = new PrismaClient();
 // Register a juridic process
 
 export const registerProcess = async (userId: number, dto: RegisterDTO) => {
-    // Generate a process number. Eg.: 2025/{ProcessType}/{UUID}}
-    const processNumber = `2025-${dto.tipo}-${crypto.randomUUID()}`;
+    // Generate a process number. Eg.: 2025/{ProcessType}/{Count + 123456}}
+    const currentYear = new Date().getFullYear();
+
+    const count = await prisma.processoJuridico.count({
+        where: {
+            dataAbertura: {
+                gte: new Date(`${currentYear}-01-01T00:00:00.000Z`),
+                lt: new Date(`${currentYear + 1}-01-01T00:00:00.000Z`),
+            },
+        },
+    });
+
+
+    const processNumber = `2025-${dto.tipo}-${count.toString().padStart(9, "0")}`;
 
     const newProcess = await prisma.processoJuridico.create({
         data: {
@@ -78,9 +90,9 @@ export const getProcessByNumber = async (userId: number, processNumber: string) 
     return process;
 }
 
-export const listProcesses = async (userId: number, page: number = 1, pageSize: number = 10, filter?: { estado?: EstadoProcesso, tipoProcesso?: string }) => {
+export const listProcesses = async (userId: number, isChefe: boolean, page: number = 1, pageSize: number = 10, filter?: { estado?: EstadoProcesso, tipoProcesso?: string }) => {
     const skip = (page - 1) * pageSize;
-    const whereClause: any = { responsavelId: userId };
+    const whereClause: any = isChefe ? {} : { responsavelId: userId };
 
     if (filter) {
         if (filter.estado) {
@@ -97,12 +109,78 @@ export const listProcesses = async (userId: number, page: number = 1, pageSize: 
             skip,
             take: pageSize,
             orderBy: { dataAbertura: 'desc' },
+            select: {
+                id: true,
+                createdAt: true,
+                updatedAt: true,
+                numeroProcesso: true,
+                dataAbertura: true,
+                assunto: true,
+                tipoProcesso: true,
+                estado: true,
+                dataEncerramento: true,
+                responsavel: true,
+                documentos: {
+                    select: {
+                        id: true,
+                        createdAt: true,
+                        updatedAt: true,
+                        titulo: true,
+                        descricao: true,
+                        ficheiro: true,
+                        tipoDocumento: true,
+                    }
+                },
+                parecer: true,
+                envolvidos: {
+                    include: {
+                        envolvido: true
+                    }
+                },
+                reunioes: {
+                    select: {
+                        id: true,
+                        createdAt: true,
+                        updatedAt: true,
+                        local: true,
+                        estado: true,
+                        documento: true,
+                        dataHora: true,
+                        processoId: true,
+                        comissao: {
+                            select: {
+                                id: true,
+                                createdAt: true,
+                                updatedAt: true,
+                                nome: true,
+                                dataCriacao: true,
+                                descricao: true,
+                                estado: true,
+                                dataEncerramento: true,
+                                funcionarios: {
+                                    include: {
+                                        funcionario: true,
+                                    }
+                                },
+                            }
+                        },
+                    },
+                },
+            },
         }),
         prisma.processoJuridico.count({ where: whereClause }),
     ]);
 
+    const response = processes.map(processo => ({
+        ...processo,
+        documentos: processo.documentos.map(({ ficheiro, ...doc }) => ({
+            ...doc,
+            tamanho: ficheiro?.length ?? 0,
+        })),
+    }));
+
     return {
-        processes,
+        processes: response,
         total,
         page,
         pageSize,

@@ -2,11 +2,11 @@ import { CategoriaFuncionario, EstadoFuncionario, NomeDepartamento, Role } from 
 
 export interface SignupDto {
     nome: string,
-    numero_identificacao: string,
+    numeroIdentificacao: string,
     email: string,
     senha: string,
     categoria: CategoriaFuncionario,
     estado: EstadoFuncionario,
     role: Role,
-    nomeDepartamento: NomeDepartamento,
+    departamento: NomeDepartamento,
 }
