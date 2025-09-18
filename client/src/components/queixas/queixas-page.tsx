@@ -13,6 +13,7 @@ import {
 } from '../ui/dialog';
 import {
   Plus, Search, Edit, Eye, AlertTriangle, CheckCircle, Clock,
+  Download,
 } from 'lucide-react';
 import { QueixaForm } from './queixa-form';
 import { Queixa} from '../../lib/api';
@@ -20,7 +21,7 @@ import { useQueixa } from '../../lib/queixa-context';
 import { useProcessos } from '../../lib/processos-context';
 
 export function QueixasPage() {
-  const { queixas, fetchQueixas, addQueixa, updateQueixa } = useQueixa();
+  const { queixas, fetchQueixas, addQueixa, updateQueixa, baixarDocumento } = useQueixa();
   const { fetchProcessos} = useProcessos();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedQueixa, setSelectedQueixa] = useState<Queixa | null>(null);
@@ -189,6 +190,7 @@ export function QueixasPage() {
                   <TableHead>Descrição</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Data Abertura</TableHead>
+                  <TableHead>Ficheiro Anexado</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -207,6 +209,7 @@ export function QueixasPage() {
                     </TableCell>
                     <TableCell>{getStatusBadge(q.estado)}</TableCell>
                     <TableCell>{new Date(q.dataEntrada).toLocaleDateString('pt-BR')}</TableCell>
+                    <TableCell>{q.ficheiro ? 'Sim' : 'Não'}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Dialog>
@@ -230,6 +233,11 @@ export function QueixasPage() {
                               <div className="space-y-4">
                                 <h2 className="text-lg font-semibold">Descrição</h2>
                                 <p>{selectedQueixa.descricao}</p>
+                                <h2 className="text-lg font-semibold">Data de Abertura</h2>
+                                 {new Date(selectedQueixa.dataEntrada).toLocaleDateString("pt-PT")}
+                                <h2 className="text-lg font-semibold">Estado</h2>
+                                <p>{selectedQueixa.estado}</p>
+                                
                               </div>
                             )}
                           </DialogContent>
@@ -243,6 +251,15 @@ export function QueixasPage() {
                           }}
                         >
                           <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            baixarDocumento(q.id!);
+                          }}
+                        >
+                          <Download className="w-4 h-4" />
                         </Button>
                       </div>
                     </TableCell>

@@ -1,6 +1,6 @@
 // lib/queixa-context.tsx
 import React, { createContext, useCallback, useContext, useState } from "react";
-import { getQueixas, Queixa, createQueixa, editQueixa } from "./api";
+import { getQueixas, Queixa, createQueixa, editQueixa, downloadQueixaFile } from "./api";
 
 interface QueixaContextType {
   queixas: Queixa[];
@@ -9,6 +9,7 @@ interface QueixaContextType {
   addQueixa: (queixa: Queixa) => void;
   searchQueixa: (params: { email: string }) => Promise<void>;
   updateQueixa: (id: string, data: Partial<Queixa>) => Promise<void>;
+  baixarDocumento: (id: number) => Promise<void>;
 }
 
 const QueixaContext = createContext<QueixaContextType | undefined>(undefined);
@@ -64,6 +65,22 @@ export const QueixaProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
+  const baixarDocumento = useCallback(async (id: number) => {
+    setLoading(true);
+    try {
+      const file = await downloadQueixaFile(id);
+      const url = URL.createObjectURL(file);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `queixa_${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return (
     <QueixaContext.Provider
       value={{
@@ -73,6 +90,7 @@ export const QueixaProvider = ({ children }: { children: React.ReactNode }) => {
         addQueixa,
         searchQueixa: searchQueixaHandler,
         updateQueixa,
+        baixarDocumento,
       }}
     >
       {children}

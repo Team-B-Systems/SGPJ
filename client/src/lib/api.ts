@@ -286,4 +286,11 @@ export async function editQueixa(id: number, data: Partial<Queixa>): Promise<Que
   return response.data;
 }
 
+export async function downloadQueixaFile(id: number): Promise<Blob> {
+  const response = await api.get<Blob>(`/queixa/downloadDocumento/${id}`, {
+    responseType: 'blob',
+  });
+  return response.data;
+}
+
 export default api;
