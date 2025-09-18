@@ -154,9 +154,9 @@ export function EnvolvidosPage() {
             <div className="flex items-center gap-2">
               <UserCheck className="h-4 w-4 text-blue-600" />
               <div>
-                <p className="text-sm text-muted-foreground">Internos</p>
+                <p className="text-sm text-muted-foreground">Peritos</p>
                 <p className="text-xl font-semibold">
-                  {envolvidos.filter(e => e.envolvido.papelNoProcesso === 'Réu').length}
+                  {envolvidos.filter(e => e.envolvido.papelNoProcesso === 'Perito').length}
                 </p>
               </div>
             </div>
@@ -168,7 +168,7 @@ export function EnvolvidosPage() {
             <div className="flex items-center gap-2">
               <UserX className="h-4 w-4 text-green-600" />
               <div>
-                <p className="text-sm text-muted-foreground">Externos</p>
+                <p className="text-sm text-muted-foreground">Testemunhas</p>
                 <p className="text-xl font-semibold">
                   {envolvidos.filter(e => e.envolvido.papelNoProcesso === 'Autor').length}
                 </p>
