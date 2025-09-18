@@ -26,6 +26,7 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
     papelNoProcesso: '',
     numeroIdentificacao: '',
   });
+  const papeisNoProcesso = ['Autor', 'Réu', 'Testemunha', 'Perito', 'Outro']
   const { processos } = useProcessos();
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -79,8 +80,9 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
       return;
     }
 
+    const findProcessoId = processos.find(p => p.numeroProcesso === formData.processoId.toString())?.id;
     
-    /*onSubmit({
+    onSubmit({
       createdAt: envolvido ? envolvido.createdAt : new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       envolvido: {
@@ -89,8 +91,11 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
         nome: formData.nome.trim(),
         numeroIdentificacao: formData.numeroIdentificacao.trim(),
         papelNoProcesso: formData.papelNoProcesso,
-      }
-    });*/
+        id: 0,
+      },
+      envolvidoId: 0,
+      processoJuridicoId: findProcessoId!,
+    });
 
     onClose();
   };
@@ -136,7 +141,7 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
               </SelectTrigger>
               <SelectContent>
                 {processos.map((processo) => (
-                  <SelectItem key={processo.id} value={processo.id}>
+                  <SelectItem key={processo.id} value={processo.numeroProcesso}>
                     {processo.numeroProcesso} - {processo.assunto}
                   </SelectItem>
                 ))}
@@ -147,23 +152,22 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
 
           <div>
             <Label>Tipo de Envolvido *</Label>
-            <RadioGroup
+            <Select
               value={formData.papelNoProcesso}
-              onValueChange={(value: 'interno' | 'externo') =>
-                setFormData({ ...formData, papelNoProcesso: value, nome: '', numeroIdentificacao: '' })
-              }
-              className="flex gap-6 mt-2"
-              disabled={isReadOnly}
+              onValueChange={(value: any) => setFormData({ ...formData, papelNoProcesso: value })}
             >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="interno" id="interno" />
-                <Label htmlFor="interno">Funcionário Interno</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="externo" id="externo" />
-                <Label htmlFor="externo">Parte Externa</Label>
-              </div>
-            </RadioGroup>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o papel no processo" />
+              </SelectTrigger>
+              <SelectContent>
+                {papeisNoProcesso.map((papel, index) => (
+                  <SelectItem key={index} value={papel}>
+                    {papel}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.processoId && <p className="text-destructive mt-1">{errors.processoId}</p>}
           </div>
 
           <div>
@@ -179,12 +183,12 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
           </div>
 
           <div>
-            <Label htmlFor="numeroIdentificacao">Numer Identificacao *</Label>
+            <Label htmlFor="numeroIdentificacao">Número Identificação *</Label>
             <Input
               id="numeroIdentificacao"
               value={formData.numeroIdentificacao}
               onChange={(e) => setFormData({ ...formData, numeroIdentificacao: e.target.value })}
-              placeholder="Telefone ou celular"
+              placeholder="Número Identificação"
               disabled={isReadOnly}
             />
             {errors.numeroIdentificacao && <p className="text-destructive mt-1">{errors.numeroIdentificacao}</p>}

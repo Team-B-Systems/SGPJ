@@ -35,7 +35,7 @@ import {
 import { ProcessForm } from "./process-form";
 import { ProcessDetails } from "./process-details";
 import { useProcessos } from "../../lib/processos-context";
-import { Processo, registerProcess } from "../../lib/api";
+import { editProcess, Processo, registerProcess } from "../../lib/api";
 
 export function ProcessosPage() {
   const { processos, loading, total, fetchProcessos } = useProcessos();
@@ -91,10 +91,15 @@ export function ProcessosPage() {
   const handleEditProcess = async (processData: Omit<Processo, "id">) => {
     if (editingProcess) {
       try {
-        console.log({ ...processData })
-        setShowForm(false);
+        await editProcess(editingProcess.id, {
+          assunto: processData.assunto,
+          tipoProcesso: processData.tipoProcesso,
+        });
+        await fetchProcessos();
       } catch (error) {
         console.error("Erro ao atualizar processo:", error);
+      } finally {
+        setShowForm(false);
       }
     }
   };

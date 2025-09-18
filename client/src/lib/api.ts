@@ -53,7 +53,7 @@ export interface Documento {
   updatedAt: string;
   titulo: string;
   descricao: string;
-  tamanho: string;
+  tamanho: number;
   tipoDocumento: string;
 }
 
@@ -246,7 +246,6 @@ export async function editProcess(
   data: {
     assunto?: string;
     tipoProcesso?: string;
-    estado?: string;
   }
 ): Promise<{
   process: Processo;
@@ -290,6 +289,73 @@ export async function downloadQueixaFile(id: number): Promise<Blob> {
   const response = await api.get<Blob>(`/queixa/downloadDocumento/${id}`, {
     responseType: 'blob',
   });
+  return response.data;
+}
+
+// --------- PARTES ENVOLVIDAS ---------
+
+// Interface equivalente ao DTO do backend
+export interface AdicionarParteDTO {
+  processoId: number;
+  nome: string;
+  numeroIdentificacao: string;
+  papel: string; // ou enum se quiseres tipar igual ao backend
+}
+
+// Função para adicionar parte envolvida
+export async function addParteEnvolvida(
+  dto: AdicionarParteDTO
+): Promise<{ message: string; parteEnvolvida: any }> {
+  const response = await api.post<{ message: string; parteEnvolvida: any }>(
+    "/parteenvolvido/add",
+    dto
+  );
+  return response.data;
+}
+
+export const removeParteEnvolvida = async (
+  processoId: number,
+  parteEnvolvidaId: number
+): Promise<{ message: string }> => {
+  const response = await api.delete<{ message: string }>(
+    `/parteenvolvido/remove/${processoId}/${parteEnvolvidaId}`
+  );
+  return response.data;
+};
+
+export async function attachDocument(data: {
+  processoId: number;
+  titulo: string;
+  descricao?: string;
+  tipoDocumento: string;
+  ficheiro: File;
+}): Promise<{ message: string; documento: Documento }> {
+  const formData = new FormData();
+
+  formData.append("processoId", data.processoId.toString());
+  formData.append("titulo", data.titulo);
+  if (data.descricao) formData.append("descricao", data.descricao);
+  formData.append("tipoDocumento", data.tipoDocumento);
+  formData.append("ficheiro", data.ficheiro);
+
+  const response = await api.post<{ message: string; documento: Documento }>(
+    "/documents/attach",
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
+  return response.data;
+}
+
+export async function downloadDocument(id: number): Promise<Blob> {
+  const response = await api.get(`/documents/download/${id}`, {
+    responseType: "blob", // 👈 garante que vem como ficheiro binário
+  });
+
   return response.data;
 }
 

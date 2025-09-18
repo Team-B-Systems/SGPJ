@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -7,53 +7,71 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { Users, Plus, Search, Eye, Edit, Trash2, Filter, UserCheck, UserX } from 'lucide-react';
-import { Envolvido, mockEnvolvidos, mockProcessos } from '../../lib/mock-data';
 import { EnvolvidoForm } from './envolvido-form';
 import { useAuth } from '../../lib/auth-context';
+import { addParteEnvolvida, removeParteEnvolvida, AdicionarParteDTO, Envolvido } from '../../lib/api';
+import { useProcessos } from '../../lib/processos-context';
 
 export function EnvolvidosPage() {
   const { user } = useAuth();
-  const [envolvidos, setEnvolvidos] = useState<Envolvido[]>(mockEnvolvidos);
+  const { processos } = useProcessos();
+  const [envolvidos, setEnvolvidos] = useState<Envolvido[]>([]);
   const [selectedEnvolvido, setSelectedEnvolvido] = useState<Envolvido | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProcesso, setSelectedProcesso] = useState<string>('all');
   const [selectedTipo, setSelectedTipo] = useState<string>('all');
   const [selectedParte, setSelectedParte] = useState<string>('all');
+  const { fetchProcessos } = useProcessos();
 
   const canEdit = user?.role === 'Funcionário' || user?.role === 'Admin';
 
+  useEffect(() => {
+    if (processos.length > 0) {
+      const allEnvolvidos = processos.flatMap(processo =>
+        processo.envolvidos.map(envolvido => ({
+          ...envolvido,
+        }))
+      );
+      setEnvolvidos(allEnvolvidos);
+    }
+  }, [processos]);
+
   const filteredEnvolvidos = useMemo(() => {
     return envolvidos.filter(envolvido => {
-      const matchesSearch = envolvido.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           envolvido.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           envolvido.contato.includes(searchTerm);
-      
-      const matchesProcesso = selectedProcesso === 'all' || envolvido.processoId === selectedProcesso;
-      const matchesTipo = selectedTipo === 'all' || envolvido.tipo === selectedTipo;
-      const matchesParte = selectedParte === 'all' || envolvido.parte === selectedParte;
+      const matchesSearch = envolvido.envolvido.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        envolvido.envolvido.numeroIdentificacao.toLowerCase().includes(searchTerm.toLowerCase());
 
-      return matchesSearch && matchesProcesso && matchesTipo && matchesParte;
+      const matchesProcesso = selectedProcesso === 'all' || processos.find(p => p.id === envolvido.processoJuridicoId)?.numeroProcesso === selectedProcesso;
+      const matchesTipo = selectedTipo === 'all' || envolvido.envolvido.papelNoProcesso === selectedTipo;
+
+      return matchesSearch && matchesProcesso && matchesTipo;
     });
   }, [envolvidos, searchTerm, selectedProcesso, selectedTipo, selectedParte]);
 
-  const handleSubmitEnvolvido = (envolvidoData: Omit<Envolvido, 'id'>) => {
-    if (selectedEnvolvido) {
-      // Editar envolvido existente
-      setEnvolvidos(prev => prev.map(env => 
-        env.id === selectedEnvolvido.id 
-          ? { ...envolvidoData, id: selectedEnvolvido.id }
-          : env
-      ));
-    } else {
-      // Adicionar novo envolvido
-      const newEnvolvido: Envolvido = {
-        ...envolvidoData,
-        id: (envolvidos.length + 1).toString()
+  const handleSubmitEnvolvido = async (envolvidoData: Omit<Envolvido, 'id'>) => {
+    console.log(envolvidoData);
+    
+    try {
+      // Criar DTO para criar envolvido
+      const dto: AdicionarParteDTO = {
+        processoId: envolvidoData.processoJuridicoId,
+        nome: envolvidoData.envolvido.nome,
+        numeroIdentificacao: envolvidoData.envolvido.numeroIdentificacao,
+        papel: envolvidoData.envolvido.papelNoProcesso,
       };
-      setEnvolvidos(prev => [...prev, newEnvolvido]);
+
+      await addParteEnvolvida(dto);
+
+      // Atualizar lista local com resposta real do backend
+      await fetchProcessos();
+    } catch (err: any) {
+      console.error(err.response?.data?.error || 'Erro ao salvar envolvido');
+    } finally {
+      setSelectedEnvolvido(null);
+      setIsFormOpen(false);
     }
-    setSelectedEnvolvido(null);
+      
   };
 
   const handleEditEnvolvido = (envolvido: Envolvido) => {
@@ -66,17 +84,26 @@ export function EnvolvidosPage() {
     setIsFormOpen(true);
   };
 
-  const handleDeleteEnvolvido = (id: string) => {
-    setEnvolvidos(prev => prev.filter(env => env.id !== id));
+  const handleDeleteEnvolvido = async (processoId: number, parteEnvolvidaId: number) => {
+    try {
+      await removeParteEnvolvida(processoId, parteEnvolvidaId);
+      await fetchProcessos();
+    } catch (err: any) {
+      console.error(err.response?.data?.error || 'Erro ao remover envolvido');
+      console.log(err)
+    } finally {
+      setSelectedEnvolvido(null);
+      setIsFormOpen(false);
+    }
   };
 
   const getProcessoTitulo = (processoId: string) => {
-    const processo = mockProcessos.find(p => p.id === processoId);
-    return processo ? `${processo.numeroProcesso} - ${processo.titulo}` : 'Processo não encontrado';
+    const processo = processos.find(p => p.id.toString() === processoId);
+    return processo ? `${processo.numeroProcesso} - ${processo.assunto}` : 'Processo não encontrado';
   };
 
   const getTipoBadgeVariant = (tipo: string) => {
-    return tipo === 'interno' ? 'default' : 'secondary';
+    return tipo === 'Autor' ? 'default' : 'secondary';
   };
 
   const getParteBadgeVariant = (parte: string) => {
@@ -98,7 +125,7 @@ export function EnvolvidosPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Users className="h-6 w-6" />
-          <h1>Gestão de Envolvidos</h1>
+          <h1>Gestão de Envolvidos dos Processos de - {user?.nome}</h1>
         </div>
         {canEdit && (
           <Button onClick={() => setIsFormOpen(true)} className="gap-2">
@@ -127,9 +154,9 @@ export function EnvolvidosPage() {
             <div className="flex items-center gap-2">
               <UserCheck className="h-4 w-4 text-blue-600" />
               <div>
-                <p className="text-sm text-muted-foreground">Internos</p>
+                <p className="text-sm text-muted-foreground">Peritos</p>
                 <p className="text-xl font-semibold">
-                  {envolvidos.filter(e => e.tipo === 'interno').length}
+                  {envolvidos.filter(e => e.envolvido.papelNoProcesso === 'Perito').length}
                 </p>
               </div>
             </div>
@@ -141,9 +168,9 @@ export function EnvolvidosPage() {
             <div className="flex items-center gap-2">
               <UserX className="h-4 w-4 text-green-600" />
               <div>
-                <p className="text-sm text-muted-foreground">Externos</p>
+                <p className="text-sm text-muted-foreground">Testemunhas</p>
                 <p className="text-xl font-semibold">
-                  {envolvidos.filter(e => e.tipo === 'externo').length}
+                  {envolvidos.filter(e => e.envolvido.papelNoProcesso === 'Autor').length}
                 </p>
               </div>
             </div>
@@ -176,7 +203,7 @@ export function EnvolvidosPage() {
                 </Button>
               )}
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <Input
@@ -193,8 +220,8 @@ export function EnvolvidosPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os processos</SelectItem>
-                  {mockProcessos.map((processo) => (
-                    <SelectItem key={processo.id} value={processo.id}>
+                  {processos.map((processo) => (
+                    <SelectItem key={processo.id} value={processo.numeroProcesso}>
                       {processo.numeroProcesso}
                     </SelectItem>
                   ))}
@@ -203,23 +230,15 @@ export function EnvolvidosPage() {
 
               <Select value={selectedTipo} onValueChange={setSelectedTipo}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Todos os tipos" />
+                  <SelectValue placeholder="Todos os papéis" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os tipos</SelectItem>
-                  <SelectItem value="interno">Funcionário Interno</SelectItem>
-                  <SelectItem value="externo">Parte Externa</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={selectedParte} onValueChange={setSelectedParte}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todas as partes" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as partes</SelectItem>
-                  <SelectItem value="ativa">Parte Ativa</SelectItem>
-                  <SelectItem value="passiva">Parte Passiva</SelectItem>
+                  <SelectItem value="Autor">Autor</SelectItem>
+                  <SelectItem value="Réu">Réu</SelectItem>
+                  <SelectItem value="Testemunha">Testemunha</SelectItem>
+                  <SelectItem value="Perito">Perito</SelectItem>
+                  <SelectItem value="Outro">Outro</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -238,7 +257,7 @@ export function EnvolvidosPage() {
               <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">Nenhum envolvido encontrado</h3>
               <p className="text-muted-foreground mb-4">
-                {hasActiveFilters 
+                {hasActiveFilters
                   ? 'Tente ajustar os filtros de pesquisa.'
                   : 'Adicione o primeiro envolvido para começar.'
                 }
@@ -256,11 +275,8 @@ export function EnvolvidosPage() {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Processo</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Parte</TableHead>
-                  <TableHead>Cargo</TableHead>
-                  <TableHead>Contato</TableHead>
-                  <TableHead>Email</TableHead>
+                  <TableHead>Papel no Processo</TableHead>
+                  <TableHead>Nº de Identificação</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -268,30 +284,21 @@ export function EnvolvidosPage() {
                 {filteredEnvolvidos.map((envolvido) => (
                   <TableRow key={envolvido.id}>
                     <TableCell className="font-medium">
-                      {envolvido.nome}
+                      {envolvido.envolvido.nome}
                     </TableCell>
                     <TableCell>
                       <div className="max-w-xs">
                         <p className="truncate text-sm">
-                          {getProcessoTitulo(envolvido.processoId)}
+                          {getProcessoTitulo(envolvido.processoJuridicoId.toString())}
                         </p>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getTipoBadgeVariant(envolvido.tipo)}>
-                        {envolvido.tipo === 'interno' ? 'Interno' : 'Externo'}
+                      <Badge variant={getTipoBadgeVariant(envolvido.envolvido.papelNoProcesso)}>
+                        {envolvido.envolvido.papelNoProcesso}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant={getParteBadgeVariant(envolvido.parte)}>
-                        {envolvido.parte === 'ativa' ? 'Ativa' : 'Passiva'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {envolvido.cargo || '-'}
-                    </TableCell>
-                    <TableCell>{envolvido.contato}</TableCell>
-                    <TableCell>{envolvido.email}</TableCell>
+                    <TableCell>{envolvido.envolvido.numeroIdentificacao}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Button
@@ -301,7 +308,7 @@ export function EnvolvidosPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        
+
                         {canEdit && (
                           <>
                             <Button
@@ -322,14 +329,14 @@ export function EnvolvidosPage() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Excluir Envolvido</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Tem certeza que deseja excluir {envolvido.nome} da lista de envolvidos? 
+                                    Tem certeza que deseja excluir {envolvido.envolvido.nome} da lista de envolvidos?
                                     Esta ação não pode ser desfeita.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                   <AlertDialogAction
-                                    onClick={() => handleDeleteEnvolvido(envolvido.id)}
+                                    onClick={() => handleDeleteEnvolvido(envolvido.processoJuridicoId, envolvido.id)}
                                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                   >
                                     Excluir

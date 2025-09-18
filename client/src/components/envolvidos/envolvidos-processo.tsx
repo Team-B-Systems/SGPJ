@@ -7,7 +7,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Edit, Trash2, Mail, Phone, Eye } from 'lucide-react';
 import { EnvolvidoForm } from './envolvido-form';
 import { useAuth } from '../../lib/auth-context';
-import { Envolvido, Processo } from '../../lib/api';
+import { addParteEnvolvida, AdicionarParteDTO, Envolvido, Processo, removeParteEnvolvida } from '../../lib/api';
+import { useProcessos } from '../../lib/processos-context';
 
 interface EnvolvidosProcessoProps {
   processo: Processo;
@@ -19,32 +20,40 @@ export function EnvolvidosProcesso({ processo, envolvidos, onUpdateEnvolvidos }:
   const { user } = useAuth();
   const [selectedEnvolvido, setSelectedEnvolvido] = useState<Envolvido | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
-
-  console.log({ ...envolvidos[0] })
+  const { fetchProcessos } = useProcessos();
 
   const canEdit = (user?.role === 'Funcionário' && user?.email == processo.responsavel.email) || user?.role === 'Admin';
 
-  const handleSubmitEnvolvido = (envolvidoData: Omit<Envolvido, 'id'>) => {
-    let updatedEnvolvidos: Envolvido[];
+  const handleSubmitEnvolvido = async (envolvidoData: Omit<Envolvido, "id">) => {
+    try {
+      if (selectedEnvolvido) {
+        // Por enquanto o backend só tem "add", então atualização pode ser feita localmente
+        const updatedEnvolvidos = envolvidos.map((env) =>
+          env.id === selectedEnvolvido.id
+            ? { ...envolvidoData, id: selectedEnvolvido.id }
+            : env
+        );
+        onUpdateEnvolvidos(updatedEnvolvidos);
+      } else {
+        // Cria DTO para API
+        const dto: AdicionarParteDTO = {
+          processoId: processo.id,
+          nome: envolvidoData.envolvido.nome,
+          numeroIdentificacao: envolvidoData.envolvido.numeroIdentificacao,
+          papel: envolvidoData.envolvido.papelNoProcesso,
+        };
 
-    if (selectedEnvolvido) {
-      // Editar envolvido existente
-      updatedEnvolvidos = envolvidos.map(env => 
-        env.id === selectedEnvolvido.id 
-          ? { ...envolvidoData, id: selectedEnvolvido.id }
-          : env
-      );
-    } else {
-      // Adicionar novo envolvido
-      const newEnvolvido: Envolvido = {
-        ...envolvidoData,
-        id: 1 // ID temporário
-      };
-      updatedEnvolvidos = [...envolvidos, newEnvolvido];
+        await addParteEnvolvida(dto);
+
+        // Atualiza lista local com resposta real do backend
+        await fetchProcessos();
+      }
+    } catch (err: any) {
+      console.error(err.response?.data?.error || "Erro ao salvar envolvido");
+    } finally {
+      setSelectedEnvolvido(null);
+      setIsFormOpen(false);
     }
-
-    onUpdateEnvolvidos(updatedEnvolvidos);
-    setSelectedEnvolvido(null);
   };
 
   const handleEditEnvolvido = (envolvido: Envolvido) => {
@@ -57,12 +66,19 @@ export function EnvolvidosProcesso({ processo, envolvidos, onUpdateEnvolvidos }:
     setIsFormOpen(true);
   };
 
-  
-  /*const handleDeleteEnvolvido = (id: string) => {
-    const updatedEnvolvidos = envolvidos.filter(env => env.id !== id);
-    onUpdateEnvolvidos(updatedEnvolvidos);
+
+  const handleDeleteEnvolvido = async (id: number) => {
+    try {
+      await removeParteEnvolvida(processo.id, id);
+      // Atualiza lista local com resposta real do backend
+      await fetchProcessos();
+    } catch (err: any) {
+      console.error(err.response?.data?.error || "Erro ao remover envolvido");
+    } finally {
+      setSelectedEnvolvido(null);
+      setIsFormOpen(false);
+    }
   };
-  */
 
   const getTipoBadge = (tipo: string) => {
     return (
@@ -91,8 +107,8 @@ export function EnvolvidosProcesso({ processo, envolvidos, onUpdateEnvolvidos }:
             </CardDescription>
           </div>
           {canEdit && (
-            <Button 
-              onClick={() => setIsFormOpen(true)} 
+            <Button
+              onClick={() => setIsFormOpen(true)}
               size="sm"
               className="gap-2"
             >
@@ -109,8 +125,7 @@ export function EnvolvidosProcesso({ processo, envolvidos, onUpdateEnvolvidos }:
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Papel</TableHead>
-                <TableHead>Contato</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead>Nº Identificação</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -121,12 +136,6 @@ export function EnvolvidosProcesso({ processo, envolvidos, onUpdateEnvolvidos }:
                     <p className="font-medium">{envolvido.envolvido.nome}</p>
                   </TableCell>
                   <TableCell>{getTipoBadge(envolvido.envolvido.papelNoProcesso)}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center">
-                      <Phone className="w-4 h-4 mr-2 text-muted-foreground" />
-                      CONTACTO
-                    </div>
-                  </TableCell>
                   <TableCell>
                     <div className="flex items-center">
                       <Mail className="w-4 h-4 mr-2 text-muted-foreground" />
@@ -142,7 +151,7 @@ export function EnvolvidosProcesso({ processo, envolvidos, onUpdateEnvolvidos }:
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      
+
                       {canEdit && (
                         <>
                           <Button
@@ -163,14 +172,14 @@ export function EnvolvidosProcesso({ processo, envolvidos, onUpdateEnvolvidos }:
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Excluir Envolvido</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Tem certeza que deseja remover {envolvido.envolvido.nome} da lista de envolvidos? 
+                                  Tem certeza que deseja remover {envolvido.envolvido.nome} da lista de envolvidos?
                                   Esta ação não pode ser desfeita.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => {}}//handleDeleteEnvolvido(envolvido.id)}
+                                  onClick={() => handleDeleteEnvolvido(envolvido.id)}//handleDeleteEnvolvido(envolvido.id)}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   Excluir

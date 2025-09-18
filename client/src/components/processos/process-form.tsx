@@ -123,6 +123,7 @@ export function ProcessForm({ processo, onSubmit, onCancel }: ProcessFormProps) 
                 setFormData({ ...formData, dataAbertura: e.target.value })
               }
               required
+              disabled
             />
           </div>
         )}

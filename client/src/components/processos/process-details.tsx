@@ -27,11 +27,11 @@ interface ProcessDetailsProps {
 export const ProcessDetails = forwardRef<HTMLDivElement, ProcessDetailsProps>(({ processo, documentos, reunioes, envolvidos, onUpdateEnvolvidos }, ref) => {
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'ativo':
+      case 'Aberto':
         return <Badge className="bg-green-100 text-green-800">Ativo</Badge>;
-      case 'pendente':
+      case 'EmAndamento':
         return <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
-      case 'arquivado':
+      case 'Arquivado':
         return <Badge className="bg-gray-100 text-gray-800">Arquivado</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;

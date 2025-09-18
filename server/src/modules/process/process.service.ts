@@ -9,8 +9,20 @@ const prisma = new PrismaClient();
 // Register a juridic process
 
 export const registerProcess = async (userId: number, dto: RegisterDTO) => {
-    // Generate a process number. Eg.: 2025/{ProcessType}/{UUID}}
-    const processNumber = `2025-${dto.tipo}-${crypto.randomUUID()}`;
+    // Generate a process number. Eg.: 2025/{ProcessType}/{Count + 123456}}
+    const currentYear = new Date().getFullYear();
+
+    const count = await prisma.processoJuridico.count({
+        where: {
+            dataAbertura: {
+                gte: new Date(`${currentYear}-01-01T00:00:00.000Z`),
+                lt: new Date(`${currentYear + 1}-01-01T00:00:00.000Z`),
+            },
+        },
+    });
+
+
+    const processNumber = `2025-${dto.tipo}-${count.toString().padStart(9, "0")}`;
 
     const newProcess = await prisma.processoJuridico.create({
         data: {
@@ -108,7 +120,17 @@ export const listProcesses = async (userId: number, isChefe: boolean, page: numb
                 estado: true,
                 dataEncerramento: true,
                 responsavel: true,
-                documentos: true,
+                documentos: {
+                    select: {
+                        id: true,
+                        createdAt: true,
+                        updatedAt: true,
+                        titulo: true,
+                        descricao: true,
+                        ficheiro: true,
+                        tipoDocumento: true,
+                    }
+                },
                 parecer: true,
                 envolvidos: {
                     include: {
@@ -149,8 +171,16 @@ export const listProcesses = async (userId: number, isChefe: boolean, page: numb
         prisma.processoJuridico.count({ where: whereClause }),
     ]);
 
+    const response = processes.map(processo => ({
+        ...processo,
+        documentos: processo.documentos.map(({ ficheiro, ...doc }) => ({
+            ...doc,
+            tamanho: ficheiro?.length ?? 0,
+        })),
+    }));
+
     return {
-        processes,
+        processes: response,
         total,
         page,
         pageSize,

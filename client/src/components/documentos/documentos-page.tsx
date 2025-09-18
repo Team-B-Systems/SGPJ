@@ -1,66 +1,97 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
-import { 
-  Plus, 
-  Search, 
-  Download, 
-  FileText, 
+import {
+  Plus,
+  Search,
+  Download,
+  FileText,
   Upload,
   Filter
 } from 'lucide-react';
-import { mockDocumentos, mockProcessos, type Documento } from '../../lib/mock-data';
 import { DocumentoForm } from './documento-form';
+import { useProcessos } from '../../lib/processos-context';
+import { Documento, attachDocument, downloadDocument } from '../../lib/api';
+
+function formatFileSize(bytes: number): string {
+  if (!bytes) return "0 KB";
+
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  }
+
+  return `${(bytes / 1024).toFixed(2)} KB`;
+}
+
 
 export function DocumentosPage() {
-  const [documentos, setDocumentos] = useState<Documento[]>(mockDocumentos);
+  const { processos, fetchProcessos } = useProcessos();
+  const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTipo, setSelectedTipo] = useState<string>('');
   const [showForm, setShowForm] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<Documento | null>(null);
 
+  useEffect(() => {
+    const allDocumentos = processos.flatMap(processo =>
+      processo.documentos.map(documento => ({
+        ...documento,
+        processoId: processo.id,
+      }))
+    );
+    setDocumentos(allDocumentos);
+  }, [processos]);
+
   const filteredDocumentos = documentos.filter(doc => {
     const matchesSearch = doc.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         doc.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         doc.tipoDocumento.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         doc.uploadedBy.toLowerCase().includes(searchTerm.toLowerCase());
-    
+      doc.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doc.tipoDocumento.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesTipo = !selectedTipo || doc.tipoDocumento === selectedTipo;
-    
+
     return matchesSearch && matchesTipo;
   });
 
-  const handleCreateDocumento = (docData: Omit<Documento, 'id'>) => {
-    const newDoc: Documento = {
-      ...docData,
-      id: (documentos.length + 1).toString(),
-    };
-    setDocumentos([...documentos, newDoc]);
-    setShowForm(false);
+  const handleCreateDocumento = async (docData: Omit<Documento, 'id'> & { ficheiro: any } & { processoId: number }) => {
+
+    try {
+      await attachDocument(docData);
+      await fetchProcessos();
+      setShowForm(false);
+    } catch (error) {
+      console.error('Erro ao anexar documento:', error);
+    }
   };
 
-  const handleDownload = (documento: Documento) => {
-    // Simulate file download
-    const link = document.createElement('a');
-    link.href = '#'; // In a real app, this would be the actual file URL
-    link.download = documento.nomeArquivo;
+  async function handleDownload(doc: Documento) {
+  try {
+    const fileBlob = await downloadDocument(doc.id);
+
+    const url = window.URL.createObjectURL(fileBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${doc.titulo}.pdf`; // 👈 nome do ficheiro
+    document.body.appendChild(link);
     link.click();
-    
-    // Show a toast or notification that download started
-    alert(`Download iniciado: ${documento.nomeArquivo}`);
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Erro ao baixar documento:", error);
+  }
+}
+
+
+  const getProcessoTituloByIdDoc = (docId: number) => {
+    const processo = processos.find(p => p.documentos.some(d => d.id === docId));
+    return processo ? processo.assunto : 'Processo não encontrado';
   };
 
-  const getProcessoTitulo = (processoId: string) => {
-    const processo = mockProcessos.find(p => p.id === processoId);
-    return processo ? processo.titulo : 'Processo não encontrado';
-  };
-
-  const getProcessoNumero = (processoId: string) => {
-    const processo = mockProcessos.find(p => p.id === processoId);
+  const getProcessoNumeroByIdDoc = (docId: number) => {
+    const processo = processos.find(p => p.documentos.some(d => d.id === docId));
     return processo ? processo.numeroProcesso : '';
   };
 
@@ -68,9 +99,9 @@ export function DocumentosPage() {
 
   const stats = {
     total: documentos.length,
-    peticoes: documentos.filter(d => d.tipoDocumento === 'Petição').length,
-    contratos: documentos.filter(d => d.tipoDocumento === 'Contrato').length,
-    minutas: documentos.filter(d => d.tipoDocumento === 'Minuta').length,
+    atas: documentos.filter(d => d.tipoDocumento === 'Ata').length,
+    contestacoes: documentos.filter(d => d.tipoDocumento === 'Contestação').length,
+    provas: documentos.filter(d => d.tipoDocumento === 'Prova').length,
   };
 
   return (
@@ -104,34 +135,34 @@ export function DocumentosPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Petições</CardTitle>
+            <CardTitle className="text-sm font-medium">Atas</CardTitle>
             <FileText className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.peticoes}</div>
-            <p className="text-xs text-muted-foreground">petições</p>
+            <div className="text-2xl font-bold text-blue-600">{stats.atas}</div>
+            <p className="text-xs text-muted-foreground">atas</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Contratos</CardTitle>
+            <CardTitle className="text-sm font-medium">Contestações</CardTitle>
             <FileText className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.contratos}</div>
-            <p className="text-xs text-muted-foreground">contratos</p>
+            <div className="text-2xl font-bold text-green-600">{stats.contestacoes}</div>
+            <p className="text-xs text-muted-foreground">contestações</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Minutas</CardTitle>
+            <CardTitle className="text-sm font-medium">Provas</CardTitle>
             <FileText className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{stats.minutas}</div>
-            <p className="text-xs text-muted-foreground">minutas</p>
+            <div className="text-2xl font-bold text-purple-600">{stats.provas}</div>
+            <p className="text-xs text-muted-foreground">provas</p>
           </CardContent>
         </Card>
       </div>
@@ -204,27 +235,31 @@ export function DocumentosPage() {
                           <p className="font-medium">{doc.titulo}</p>
                           <p className="text-sm text-muted-foreground">{doc.descricao}</p>
                           <p className="text-xs text-muted-foreground font-mono">
-                            {doc.nomeArquivo}
+                            {doc.titulo}
                           </p>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="text-sm font-medium">{getProcessoTitulo(doc.processoId)}</p>
+                        <p className="text-sm font-medium">{getProcessoTituloByIdDoc(doc.id)}</p>
                         <p className="text-xs text-muted-foreground font-mono">
-                          {getProcessoNumero(doc.processoId)}
+                          {getProcessoNumeroByIdDoc(doc.id)}
                         </p>
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">{doc.tipoDocumento}</Badge>
                     </TableCell>
-                    <TableCell>{doc.tamanho}</TableCell>
+                    <TableCell>{formatFileSize(doc.tamanho)}</TableCell>
                     <TableCell>
-                      {new Date(doc.dataUpload).toLocaleDateString('pt-BR')}
+                      {new Date(doc.createdAt).toLocaleDateString('pt-BR')}
                     </TableCell>
-                    <TableCell>{doc.uploadedBy}</TableCell>
+                    <TableCell>
+                      {
+                        processos.find(p => p.documentos.some(d => d.id === doc.id))?.responsavel.nome
+                      }
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Dialog>
@@ -257,24 +292,28 @@ export function DocumentosPage() {
                                   </div>
                                   <div>
                                     <h4 className="font-medium">Nome do Arquivo</h4>
-                                    <p className="text-sm text-muted-foreground font-mono">{selectedDoc.nomeArquivo}</p>
+                                    <p className="text-sm text-muted-foreground font-mono">{selectedDoc.titulo}</p>
                                   </div>
                                   <div>
                                     <h4 className="font-medium">Tamanho</h4>
-                                    <p className="text-sm text-muted-foreground">{selectedDoc.tamanho}</p>
+                                    <p className="text-sm text-muted-foreground">{formatFileSize(selectedDoc.tamanho)}</p>
                                   </div>
                                   <div>
                                     <h4 className="font-medium">Data de Upload</h4>
                                     <p className="text-sm text-muted-foreground">
-                                      {new Date(selectedDoc.dataUpload).toLocaleDateString('pt-BR')}
+                                      {new Date(selectedDoc.createdAt).toLocaleDateString('pt-BR')}
                                     </p>
                                   </div>
                                   <div>
                                     <h4 className="font-medium">Enviado por</h4>
-                                    <p className="text-sm text-muted-foreground">{selectedDoc.uploadedBy}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {
+                                        processos.find(p => p.documentos.some(d => d.id === selectedDoc.id))?.responsavel.nome
+                                      }
+                                    </p>
                                   </div>
                                 </div>
-                                
+
                                 <div>
                                   <h4 className="font-medium mb-2">Descrição</h4>
                                   <p className="text-sm text-muted-foreground">{selectedDoc.descricao}</p>
@@ -283,9 +322,9 @@ export function DocumentosPage() {
                                 <div>
                                   <h4 className="font-medium mb-2">Processo Relacionado</h4>
                                   <div className="p-3 bg-gray-50 rounded-lg">
-                                    <p className="font-medium">{getProcessoTitulo(selectedDoc.processoId)}</p>
+                                    <p className="font-medium">{getProcessoTituloByIdDoc(selectedDoc.id)}</p>
                                     <p className="text-sm text-muted-foreground font-mono">
-                                      {getProcessoNumero(selectedDoc.processoId)}
+                                      {getProcessoNumeroByIdDoc(selectedDoc.id)}
                                     </p>
                                   </div>
                                 </div>

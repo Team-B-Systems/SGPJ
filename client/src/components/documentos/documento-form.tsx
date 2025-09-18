@@ -5,26 +5,28 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useAuth } from '../../lib/auth-context';
-import { mockProcessos, type Documento } from '../../lib/mock-data';
 import { Upload, File, X } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
+import { Documento } from '../../lib/api';
+import { useProcessos } from '../../lib/processos-context';
 
 interface DocumentoFormProps {
-  onSubmit: (data: Omit<Documento, 'id'>) => void;
+  onSubmit: (data: Omit<Documento, 'id'> & { ficheiro: any } & { processoId: number }) => void;
   onCancel: () => void;
 }
 
 export function DocumentoForm({ onSubmit, onCancel }: DocumentoFormProps) {
   const { user } = useAuth();
+  const { processos } = useProcessos();
   const [formData, setFormData] = useState({
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     titulo: '',
     descricao: '',
     tipoDocumento: '',
-    processoId: '',
-    nomeArquivo: '',
-    tamanho: '',
-    dataUpload: new Date().toISOString().split('T')[0],
-    uploadedBy: user?.nome || '',
+    tamanho: 0,
+    processoId: -1,
+    ficheiro: new Object(),
   });
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -52,8 +54,7 @@ export function DocumentoForm({ onSubmit, onCancel }: DocumentoFormProps) {
       setSelectedFile(file);
       setFormData({
         ...formData,
-        nomeArquivo: file.name,
-        tamanho: formatFileSize(file.size),
+        tamanho: file.size,
       });
     }
   };
@@ -68,11 +69,24 @@ export function DocumentoForm({ onSubmit, onCancel }: DocumentoFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedFile) {
       setError('Por favor, selecione um arquivo PDF');
       return;
     }
+
+    formData.ficheiro = selectedFile;
+
+    const findProcessoId = processos.find((processo) => {
+      return processo.numeroProcesso === formData.processoId.toString();
+    })?.id;
+
+    if (!findProcessoId) {
+      setError('Processo não encontrado');
+      return;
+    }
+
+    formData.processoId = findProcessoId;
 
     onSubmit(formData);
   };
@@ -81,24 +95,20 @@ export function DocumentoForm({ onSubmit, onCancel }: DocumentoFormProps) {
     setSelectedFile(null);
     setFormData({
       ...formData,
-      nomeArquivo: '',
-      tamanho: '',
+      titulo: '',
+      tamanho: -1,
     });
     setError('');
   };
 
   const tiposDocumento = [
-    'Petição',
-    'Contrato',
-    'Minuta',
+    'Relatório',
     'Ata',
     'Parecer',
-    'Sentença',
     'Decisão',
-    'Documento Administrativo',
-    'Procuração',
-    'Certidão',
-    'Outro'
+    'Contestação',
+    'Prova',
+    'Outro',
   ];
 
   return (
@@ -128,17 +138,17 @@ export function DocumentoForm({ onSubmit, onCancel }: DocumentoFormProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="processoId">Processo Relacionado *</Label>
-          <Select 
-            value={formData.processoId} 
-            onValueChange={(value) => setFormData({ ...formData, processoId: value })}
+          <Select
+            value={formData.processoId}
+            onValueChange={(value: any) => setFormData({ ...formData, processoId: value })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione o processo" />
             </SelectTrigger>
             <SelectContent>
-              {mockProcessos.map((processo) => (
-                <SelectItem key={processo.id} value={processo.id}>
-                  {processo.numeroProcesso} - {processo.titulo}
+              {processos.map((processo) => (
+                <SelectItem key={processo.id} value={processo.numeroProcesso}>
+                  {processo.numeroProcesso} - {processo.assunto}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -147,9 +157,9 @@ export function DocumentoForm({ onSubmit, onCancel }: DocumentoFormProps) {
 
         <div className="space-y-2">
           <Label htmlFor="tipoDocumento">Tipo de Documento *</Label>
-          <Select 
-            value={formData.tipoDocumento} 
-            onValueChange={(value) => setFormData({ ...formData, tipoDocumento: value })}
+          <Select
+            value={formData.tipoDocumento}
+            onValueChange={(value: string) => setFormData({ ...formData, tipoDocumento: value })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione o tipo" />
