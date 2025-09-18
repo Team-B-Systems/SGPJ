@@ -93,7 +93,7 @@ interface Comissao {
 }
 
 export interface Reuniao {
-  id: number;
+  id?: number;
   createdAt: string;
   updatedAt: string;
   local: string;
@@ -102,6 +102,17 @@ export interface Reuniao {
   comissao: Comissao;
   dataHora: string;
   processoId: number;
+}
+
+export interface Queixa {
+  id?: number;
+  descricao: string;
+  estado: string;
+  dataEntrada: string;
+  ficheiro: File | null;
+  processoId?: number;
+  pPassivaId: number;
+  funcionarioId: number;
 }
 
 export interface AuthResponse {
@@ -242,6 +253,36 @@ export async function editProcess(
   message: string;
 }> {
   const response = await api.patch(`/process/edit/${processId}`, data);
+  return response.data;
+}
+
+// ======= Queixas =======
+export async function getQueixas(): Promise<Queixa[]> {
+  const response = await api.get<Queixa[]>("/queixa/visualizar");
+  return response.data;
+}
+
+export async function createQueixa(data: Queixa): Promise<Queixa> {
+
+  const response = await api.post<Queixa>("/queixa/cadastrar", data);
+  return response.data;
+}
+
+export async function editQueixa(id: number, data: Partial<Queixa>): Promise<Queixa> {
+  const fd = new FormData();
+  if (data.descricao) fd.append("descricao", data.descricao);
+  if (data.estado) fd.append("estado", data.estado);
+  if (data.dataEntrada) fd.append("dataEntrada", data.dataEntrada);
+  if (data.ficheiro) fd.append("ficheiro", data.ficheiro);
+  if (data.pPassivaId !== undefined) fd.append("pPassivaId", data.pPassivaId.toString());
+  //if (data.processoId !== undefined) fd.append("processoId", data.processoId.toString());
+  if (data.funcionarioId !== undefined) fd.append("funcionarioId", data.funcionarioId.toString());
+
+  const response = await api.patch<Queixa>(`/queixa/editar/${id}`, fd,{
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
   return response.data;
 }
 
