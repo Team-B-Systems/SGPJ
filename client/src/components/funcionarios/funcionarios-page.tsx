@@ -295,7 +295,7 @@ export function FuncionariosPage() {
                           <Edit className="w-4 h-4" />
                         </Button>
 
-                        <Button
+                        {/* <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleToggleStatus(funcionario.email)}
@@ -305,7 +305,7 @@ export function FuncionariosPage() {
                           ) : (
                             <UserCheck className="w-4 h-4 text-green-500" />
                           )}
-                        </Button>
+                        </Button> */}
                       </div>
                     </TableCell>
                   </TableRow>
