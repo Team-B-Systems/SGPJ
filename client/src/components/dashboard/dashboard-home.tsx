@@ -53,7 +53,7 @@ export function DashboardHome() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {user?.role !== 'Admin' && (<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Processos Ativos</CardTitle>
@@ -105,10 +105,11 @@ export function DashboardHome() {
             </p>
           </CardContent>
         </Card>
-      </div>
+      </div>)}
 
       {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {user?.role !== 'Admin' && (
+         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Processes */}
         <Card>
           <CardHeader>
@@ -185,7 +186,8 @@ export function DashboardHome() {
           </CardContent>
         </Card>
       </div>
-
+      )}
+     
       {/* Quick Actions - Only for Admin */}
       {user?.role === 'Admin' && (
         <Card>
@@ -200,20 +202,21 @@ export function DashboardHome() {
                 <h3 className="font-medium">Cadastrar Funcionário</h3>
                 <p className="text-sm text-muted-foreground">Adicionar novo membro à equipe</p>
               </div>
-              <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                <FileText className="h-8 w-8 text-green-600 mb-2" />
-                <h3 className="font-medium">Novo Processo</h3>
-                <p className="text-sm text-muted-foreground">Registrar novo processo jurídico</p>
-              </div>
-              <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                <AlertTriangle className="h-8 w-8 text-orange-600 mb-2" />
-                <h3 className="font-medium">Revisar Queixas</h3>
-                <p className="text-sm text-muted-foreground">Analisar queixas pendentes</p>
-              </div>
             </div>
           </CardContent>
         </Card>
       )}
+
+      {user?.role !== 'Admin' && ( <><div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+        <FileText className="h-8 w-8 text-green-600 mb-2" />
+        <h3 className="font-medium">Novo Processo</h3>
+        <p className="text-sm text-muted-foreground">Registrar novo processo jurídico</p>
+      </div><div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+          <AlertTriangle className="h-8 w-8 text-orange-600 mb-2" />
+          <h3 className="font-medium">Revisar Queixas</h3>
+          <p className="text-sm text-muted-foreground">Analisar queixas pendentes</p>
+        </div></>)}
+      
     </div>
   );
 }
