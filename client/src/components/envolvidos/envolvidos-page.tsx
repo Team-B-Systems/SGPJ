@@ -21,7 +21,7 @@ export function EnvolvidosPage() {
   const [selectedTipo, setSelectedTipo] = useState<string>('all');
   const [selectedParte, setSelectedParte] = useState<string>('all');
 
-  const canEdit = user?.perfil === 'funcionario' || user?.perfil === 'administrador';
+  const canEdit = user?.role === 'Funcionário' || user?.role === 'Admin';
 
   const filteredEnvolvidos = useMemo(() => {
     return envolvidos.filter(envolvido => {

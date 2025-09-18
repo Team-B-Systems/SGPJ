@@ -117,7 +117,7 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
     }
   };
 
-  const isReadOnly = user?.perfil === 'chefe';
+  const isReadOnly = user?.role === 'Chefe';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -138,7 +138,7 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
             <Label htmlFor="processoId">Processo *</Label>
             <Select
               value={formData.processoId}
-              onValueChange={(value) => setFormData({ ...formData, processoId: value })}
+              onValueChange={(value: any) => setFormData({ ...formData, processoId: value })}
               disabled={isReadOnly || !!processoId}
             >
               <SelectTrigger>

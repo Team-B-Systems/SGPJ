@@ -1,40 +1,83 @@
 // lib/funcionarios-context.tsx
-import React, { createContext, useContext, useState } from "react";
-import { getFuncionarios } from "./api";
-
-interface Funcionario {
-  id: string;
-  nome: string;
-  email: string;
-  cargo: string;
-}
+import React, { createContext, useCallback, useContext, useState } from "react";
+import { getFuncionario, User, searchFuncionario, createFuncionario, updateFuncionario as apiUpdateFuncionario } from "./api";
 
 interface FuncionariosContextType {
-  funcionarios: Funcionario[];
+  funcionarios: User[];
   loading: boolean;
   fetchFuncionarios: () => Promise<void>;
+  addFuncionario: (funcionario: User) => void;
+  searchFuncionario: (params: { email: string }) => Promise<void>;
+  updateFuncionario: (id: string, data: Partial<User>) => Promise<void>;
 }
 
 const FuncionariosContext = createContext<FuncionariosContextType | undefined>(undefined);
-
 export const FuncionariosProvider = ({ children }: { children: React.ReactNode }) => {
-  const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
+  const [funcionarios, setFuncionarios] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchFuncionarios = async () => {
+  const fetchFuncionarios = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getFuncionarios();
-      setFuncionarios(data);
-      // ✅ opcional: persistir no localStorage
-      localStorage.setItem("funcionarios", JSON.stringify(data));
+      const users = await getFuncionario();
+      setFuncionarios(users);
+      localStorage.setItem("funcionarios", JSON.stringify(users));
     } finally {
       setLoading(false);
     }
-  };
+
+  }, []);
+
+  const searchFuncionarioHandler = useCallback(async (params: { email: string }) => {
+    setLoading(true);
+    try {
+      const user = await searchFuncionario(params.email);
+      setFuncionarios(user ? [user] : []);
+      localStorage.setItem("funcionarios", JSON.stringify(user ? [user] : []));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const addFuncionario = useCallback(async (funcionario: User) => {
+    setLoading(true);
+    try {
+      const user = await createFuncionario(funcionario);
+      setFuncionarios(user ? [user] : []);
+      localStorage.setItem("funcionarios", JSON.stringify(user ? [user] : []));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const updateFuncionario = useCallback(async (id: string, data: Partial<User>) => {
+    setLoading(true);
+    try {
+      const updated = await apiUpdateFuncionario(id, data);
+      if (!updated) return;
+      setFuncionarios((prev) => {
+        const newList = prev.map((funcionario) =>
+        (((funcionario as any).id ?? (funcionario as any)._id ?? (funcionario as any).email) === ((updated as any).id ?? (updated as any)._id ?? (updated as any).email)
+          ? updated
+          : funcionario
+        )
+        );
+        localStorage.setItem("funcionarios", JSON.stringify(newList));
+        return newList;
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   return (
-    <FuncionariosContext.Provider value={{ funcionarios, loading, fetchFuncionarios }}>
+    <FuncionariosContext.Provider value={{ 
+      funcionarios, 
+      loading, 
+      fetchFuncionarios, 
+      addFuncionario, 
+      searchFuncionario: searchFuncionarioHandler, 
+      updateFuncionario }}>
       {children}
     </FuncionariosContext.Provider>
   );

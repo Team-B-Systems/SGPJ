@@ -3,11 +3,11 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { type Funcionario } from '../../lib/mock-data';
+import { User } from '../../lib/api';
 
 interface FuncionarioFormProps {
-  funcionario?: Funcionario | null;
-  onSubmit: (data: Omit<Funcionario, 'id'>) => void;
+  funcionario?: User | null;
+  onSubmit: (data: Omit<User, 'id'>) => void;
   onCancel: () => void;
 }
 
@@ -16,10 +16,12 @@ export function FuncionarioForm({ funcionario, onSubmit, onCancel }: Funcionario
     nome: '',
     email: '',
     cargo: '',
-    departamento: '',
+    numeroIdentificacao: '',
+    nomeDepartamento: '',
     dataAdmissao: '',
-    status: 'ativo' as const,
-    perfil: 'funcionario' as const,
+    estado: '',
+    role: '',
+    senha: '',
   });
 
   useEffect(() => {
@@ -27,11 +29,13 @@ export function FuncionarioForm({ funcionario, onSubmit, onCancel }: Funcionario
       setFormData({
         nome: funcionario.nome,
         email: funcionario.email,
-        cargo: funcionario.cargo,
-        departamento: funcionario.departamento,
-        dataAdmissao: funcionario.dataAdmissao,
-        status: funcionario.status,
-        perfil: funcionario.perfil,
+        cargo: funcionario.categoria,
+        numeroIdentificacao: funcionario.numeroIdentificacao,
+        nomeDepartamento: funcionario.departamento,
+        dataAdmissao: funcionario.createdAt.split('T')[0],
+        estado: funcionario.estado,
+        role: funcionario.role,
+        senha: '',
       });
     } else {
       // Set current date for new employees
@@ -45,33 +49,32 @@ export function FuncionarioForm({ funcionario, onSubmit, onCancel }: Funcionario
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    // Map formData to match Omit<User, 'id'>
+    const mappedData: Omit<User, 'id'> = {
+      nome: formData.nome,
+      email: formData.email,
+      categoria: formData.cargo,
+      departamento: formData.nomeDepartamento,
+      createdAt: new Date(formData.dataAdmissao).toISOString(),
+      updatedAt: new Date().toISOString(),
+      estado: formData.estado,
+      role: formData.role,
+      numeroIdentificacao: formData.numeroIdentificacao,
+      senha: formData.senha,
+    };
+    onSubmit(mappedData);
   };
 
   const departamentos = [
-    'Jurídico',
-    'Administrativo',
-    'Financeiro',
     'Recursos Humanos',
-    'TI',
-    'Comercial',
-    'Outro'
+    'Jurídico',
+    'Financeiro',
+    'TI'
   ];
 
   const cargos = [
-    'Advogado Júnior',
-    'Advogado Pleno',
-    'Advogado Sênior',
-    'Paralegal',
-    'Assistente Jurídico',
-    'Coordenador Jurídico',
-    'Chefe de Departamento',
-    'Gerente',
-    'Diretor',
-    'Administrador do Sistema',
-    'Analista',
-    'Assistente',
-    'Outro'
+    'Técnico',
+    'Chefe'
   ];
 
   return (
@@ -97,16 +100,30 @@ export function FuncionarioForm({ funcionario, onSubmit, onCancel }: Funcionario
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             placeholder="email@empresa.com"
             required
+            readOnly={!!funcionario} 
           />
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="cargo">Cargo *</Label>
-          <Select 
-            value={formData.cargo} 
-            onValueChange={(value) => setFormData({ ...formData, cargo: value })}
+          <Label htmlFor="numero_identificacao">Número Identificação *</Label>
+          <Input
+            id="numero_identificacao"
+            type="text"
+            value={formData.numeroIdentificacao}
+            onChange={(e) => setFormData({ ...formData, numeroIdentificacao: e.target.value })}
+            placeholder="Digite o número de identificação"
+            required
+            readOnly={!!funcionario}   // impede edição, mas o valor é enviado
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="cargo">Categoria *</Label>
+          <Select
+            value={formData.cargo}
+            onValueChange={(value: any) => setFormData({ ...formData, cargo: value })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione o cargo" />
@@ -120,12 +137,14 @@ export function FuncionarioForm({ funcionario, onSubmit, onCancel }: Funcionario
             </SelectContent>
           </Select>
         </div>
+      </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="departamento">Departamento *</Label>
-          <Select 
-            value={formData.departamento} 
-            onValueChange={(value) => setFormData({ ...formData, departamento: value })}
+          <Select
+            value={formData.nomeDepartamento}
+            onValueChange={(value: any) => setFormData({ ...formData, nomeDepartamento: value })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione o departamento" />
@@ -139,55 +158,57 @@ export function FuncionarioForm({ funcionario, onSubmit, onCancel }: Funcionario
             </SelectContent>
           </Select>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="perfil">Perfil de Acesso *</Label>
-          <Select 
-            value={formData.perfil} 
-            onValueChange={(value: 'funcionario' | 'chefe' | 'administrador') => 
-              setFormData({ ...formData, perfil: value })
+          <Select
+            value={formData.role}
+            onValueChange={(value: 'Funcionario' | 'Chefe' | 'Admin') =>
+              setFormData({ ...formData, role: value })
             }
           >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="funcionario">Funcionário</SelectItem>
-              <SelectItem value="chefe">Chefe</SelectItem>
-              <SelectItem value="administrador">Administrador</SelectItem>
+              <SelectItem value="Funcionário">Funcionário</SelectItem>
+              <SelectItem value="Chefe">Chefe</SelectItem>
+              <SelectItem value="Admin">Administrador</SelectItem>
             </SelectContent>
           </Select>
         </div>
+      </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
-          <Select 
-            value={formData.status} 
-            onValueChange={(value: 'ativo' | 'inativo') => 
-              setFormData({ ...formData, status: value })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ativo">Ativo</SelectItem>
-              <SelectItem value="inativo">Inativo</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="dataAdmissao">Data de Admissão *</Label>
+          <Label htmlFor="senha">Senha *</Label>
           <Input
-            id="dataAdmissao"
-            type="date"
-            value={formData.dataAdmissao}
-            onChange={(e) => setFormData({ ...formData, dataAdmissao: e.target.value })}
+            id="senha"
+            type="password"
+            value={formData.senha}
+            onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
+            placeholder="*******"
             required
+            disabled={!!funcionario}
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="status">Estado *</Label>
+          <Select
+            value={formData.estado}
+            onValueChange={(value: 'Ativo' | 'Inativo') =>
+              setFormData({ ...formData, estado: value })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Ativo">Ativo</SelectItem>
+              <SelectItem value="Inativo">Inativo</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

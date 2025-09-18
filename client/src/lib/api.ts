@@ -17,6 +17,7 @@ api.interceptors.request.use((config) => {
 
 // --------- TYPES ---------
 export interface User {
+  id?: string;
   email: string;
   role: string;
   createdAt: string; // vem como string ISO do backend
@@ -25,12 +26,17 @@ export interface User {
   numeroIdentificacao: string;
   categoria: string;
   estado: string;
-  departamentoId: number;
+  departamento: string;
+  senha: string;
 }
 
 export interface AuthResponse {
   token: string;
   user: User;
+}
+
+export interface GetFuncionariosResponse {
+  funcionarios: User[];
 }
 
 // --------- AUTH ---------
@@ -52,14 +58,14 @@ export async function login(data: {
   password: string;
   isAdmin: boolean;
 }): Promise<AuthResponse> {
-    let endpoint: string;
+  let endpoint: string;
   if (data.isAdmin) {
     endpoint = "/admin/login";
   } else {
     endpoint = "/auth/login";
   }
 
-    const response = await api.post<AuthResponse>(endpoint, {
+  const response = await api.post<AuthResponse>(endpoint, {
     email: data.email,
     senha: data.password,
   });
@@ -87,6 +93,36 @@ export async function getAdminPerfil(): Promise<User> {
 
 export async function updateAdminPerfil(data: Partial<User>): Promise<User> {
   const response = await api.patch<User>("/admin/editarperfil", data);
+  return response.data;
+}
+
+// --------- FUNCIONARIOS (ADMIN) ---------
+export async function createFuncionario(data: User): Promise<User> {
+  try {
+    const response = await api.post("/admin/cadastrarfuncionario", data);
+    return response.data;
+  } catch (err: any) {
+    throw err;
+  }
+}
+
+export async function updateFuncionario(id: string, data: Partial<User>): Promise<User> {
+  try {
+    const response = await api.patch<User>(`/admin/editarperfil`, data);
+    return response.data;
+  } catch (err: any) {
+    throw err;
+  }
+
+}
+
+export async function getFuncionario(): Promise<User[]> {
+  const response = await api.get<User[]>("/admin/visualizarfuncionarios");
+  return response.data;
+}
+
+export async function searchFuncionario(email: string): Promise<User> {
+  const response = await api.patch<User>("/admin/pesquisarfuncionario", { email });
   return response.data;
 }
 
