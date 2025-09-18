@@ -19,7 +19,7 @@ export const signup = async (dto: SignupDto) => {
         const hashedsenha = await hashPassword(dto.senha);
 
         const departamento = await prisma.departamento.findFirst({
-            where: { nome: dto.nomeDepartamento },
+            where: { nome: dto.departamento },
         });
 
         if (!departamento) {
@@ -29,7 +29,7 @@ export const signup = async (dto: SignupDto) => {
         const newUser = await prisma.funcionario.create({
             data: {
                 nome: dto.nome,
-                numeroIdentificacao: dto.numero_identificacao,
+                numeroIdentificacao: dto.numeroIdentificacao,
                 email: dto.email,
                 categoria: dto.categoria,
                 senha: hashedsenha,
