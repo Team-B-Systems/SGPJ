@@ -5,22 +5,24 @@ import { Badge } from '../ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { Plus, Edit, Trash2, Mail, Phone, Eye } from 'lucide-react';
-import { Envolvido } from '../../lib/mock-data';
 import { EnvolvidoForm } from './envolvido-form';
 import { useAuth } from '../../lib/auth-context';
+import { Envolvido, Processo } from '../../lib/api';
 
 interface EnvolvidosProcessoProps {
-  processoId: string;
+  processo: Processo;
   envolvidos: Envolvido[];
   onUpdateEnvolvidos: (envolvidos: Envolvido[]) => void;
 }
 
-export function EnvolvidosProcesso({ processoId, envolvidos, onUpdateEnvolvidos }: EnvolvidosProcessoProps) {
+export function EnvolvidosProcesso({ processo, envolvidos, onUpdateEnvolvidos }: EnvolvidosProcessoProps) {
   const { user } = useAuth();
   const [selectedEnvolvido, setSelectedEnvolvido] = useState<Envolvido | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
-  const canEdit = user?.role === 'Funcionário' || user?.role === 'Admin';
+  console.log({ ...envolvidos[0] })
+
+  const canEdit = (user?.role === 'Funcionário' && user?.email == processo.responsavel.email) || user?.role === 'Admin';
 
   const handleSubmitEnvolvido = (envolvidoData: Omit<Envolvido, 'id'>) => {
     let updatedEnvolvidos: Envolvido[];
@@ -36,7 +38,7 @@ export function EnvolvidosProcesso({ processoId, envolvidos, onUpdateEnvolvidos 
       // Adicionar novo envolvido
       const newEnvolvido: Envolvido = {
         ...envolvidoData,
-        id: `env_${Date.now()}` // ID temporário
+        id: 1 // ID temporário
       };
       updatedEnvolvidos = [...envolvidos, newEnvolvido];
     }
@@ -55,15 +57,17 @@ export function EnvolvidosProcesso({ processoId, envolvidos, onUpdateEnvolvidos 
     setIsFormOpen(true);
   };
 
-  const handleDeleteEnvolvido = (id: string) => {
+  
+  /*const handleDeleteEnvolvido = (id: string) => {
     const updatedEnvolvidos = envolvidos.filter(env => env.id !== id);
     onUpdateEnvolvidos(updatedEnvolvidos);
   };
+  */
 
   const getTipoBadge = (tipo: string) => {
     return (
-      <Badge variant={tipo === 'interno' ? 'default' : 'secondary'}>
-        {tipo === 'interno' ? 'Interno' : 'Externo'}
+      <Badge variant='default'>
+        {tipo}
       </Badge>
     );
   };
@@ -104,8 +108,7 @@ export function EnvolvidosProcesso({ processoId, envolvidos, onUpdateEnvolvidos 
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Parte</TableHead>
+                <TableHead>Papel</TableHead>
                 <TableHead>Contato</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Ações</TableHead>
@@ -115,25 +118,19 @@ export function EnvolvidosProcesso({ processoId, envolvidos, onUpdateEnvolvidos 
               {envolvidos.map((envolvido) => (
                 <TableRow key={envolvido.id}>
                   <TableCell>
-                    <div>
-                      <p className="font-medium">{envolvido.nome}</p>
-                      {envolvido.cargo && (
-                        <p className="text-sm text-muted-foreground">{envolvido.cargo}</p>
-                      )}
-                    </div>
+                    <p className="font-medium">{envolvido.envolvido.nome}</p>
                   </TableCell>
-                  <TableCell>{getTipoBadge(envolvido.tipo)}</TableCell>
-                  <TableCell>{getParteBadge(envolvido.parte)}</TableCell>
+                  <TableCell>{getTipoBadge(envolvido.envolvido.papelNoProcesso)}</TableCell>
                   <TableCell>
                     <div className="flex items-center">
                       <Phone className="w-4 h-4 mr-2 text-muted-foreground" />
-                      {envolvido.contato}
+                      CONTACTO
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center">
                       <Mail className="w-4 h-4 mr-2 text-muted-foreground" />
-                      {envolvido.email}
+                      {envolvido.envolvido.numeroIdentificacao}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -166,14 +163,14 @@ export function EnvolvidosProcesso({ processoId, envolvidos, onUpdateEnvolvidos 
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Excluir Envolvido</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Tem certeza que deseja remover {envolvido.nome} da lista de envolvidos? 
+                                  Tem certeza que deseja remover {envolvido.envolvido.nome} da lista de envolvidos? 
                                   Esta ação não pode ser desfeita.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => handleDeleteEnvolvido(envolvido.id)}
+                                  onClick={() => {}}//handleDeleteEnvolvido(envolvido.id)}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   Excluir
@@ -212,7 +209,7 @@ export function EnvolvidosProcesso({ processoId, envolvidos, onUpdateEnvolvidos 
           }}
           onSubmit={handleSubmitEnvolvido}
           envolvido={selectedEnvolvido || undefined}
-          processoId={processoId}
+          processoId={processo.id}
         />
       </CardContent>
     </Card>

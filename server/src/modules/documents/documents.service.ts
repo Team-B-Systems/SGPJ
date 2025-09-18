@@ -49,16 +49,16 @@ export const listarDocumentosPorProcesso = async (processoId: number, userId: nu
 
     const documentos = await prisma.documento.findMany({
         where: { processoId: processo.id },
-        select: {
-            createdAt: true,
-            updatedAt: true,
-            titulo: true,
-            descricao: true,
-            tipoDocumento: true,
-        },
     });
 
-    return documentos;
+    return documentos.map((doc) => {
+        const { ficheiro, ...docSemFicheiro } = doc;
+
+        return {
+            ...docSemFicheiro,
+            tamanho: `${(ficheiro.length / 1024).toFixed(2)} KB`,
+        }
+    });
 }
 
 export const baixarDocumento = async (documentoId: number, userId: number) => {

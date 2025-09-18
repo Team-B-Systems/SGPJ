@@ -31,7 +31,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { path: "/envolvidos", label: "Envolvidos", icon: UserPlus, roles: ["Funcionário", "Chefe", "Admin"] },
     { path: "/queixas", label: "Queixas", icon: AlertTriangle, roles: ["Funcionário", "Chefe", "Admin"] },
     { path: "/comissoes", label: "Comissões", icon: Building, roles: ["Funcionário", "Chefe", "Admin"] },
-    { path: "/funcionarios", label: "Funcionários", icon: Users, roles: ["administrador"] },
+    { path: "/funcionarios", label: "Funcionários", icon: Users, roles: ["Admin"] },
     { path: "/perfil", label: "Perfil", icon: User, roles: ["Funcionário", "Chefe", "Admin"] },
   ];
 
@@ -41,9 +41,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case "administrador":
+      case "Admin":
         return "bg-red-500";
-      case "chefe":
+      case "Chefe":
         return "bg-blue-500";
       default:
         return "bg-green-500";

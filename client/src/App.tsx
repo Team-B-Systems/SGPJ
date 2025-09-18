@@ -1,4 +1,3 @@
-import React from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -18,6 +17,7 @@ import { QueixasPage } from "./components/queixas/queixas-page";
 import { ReunioesPage } from "./components/reunioes/reunioes-page";
 import { ComissoesPage } from "./components/comissoes/comissoes-page";
 import { EnvolvidosPage } from "./components/envolvidos/envolvidos-page";
+import { ProcessosProvider } from "./lib/processos-context";
 
 function PrivateRoutes() {
   const { isAuthenticated, loading } = useAuth();
@@ -63,7 +63,9 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ProcessosProvider>
+        <AppContent />
+      </ProcessosProvider>
     </AuthProvider>
   );
 }

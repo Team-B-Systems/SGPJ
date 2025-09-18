@@ -84,9 +84,11 @@ export const getProcessByNumber = async (req: AuthRequest, res: Response) => {
 }
 
 export const listProcesses = async (req: AuthRequest, res: Response) => {
-    if (!req.user || req.user.role !== Role.Funcionário) {
+    if (!req.user || (req.user.role !== Role.Funcionário && req.user.role !== Role.Chefe)) {
         return res.status(401).json({ error: "Não autorizado" })
     }
+
+    const isChefe = req.user.role === Role.Chefe;
 
     const page = parseInt(req.query.page as string, 10) || 1;
     const pageSize = parseInt(req.query.pageSize as string, 10) || 10;
@@ -101,7 +103,7 @@ export const listProcesses = async (req: AuthRequest, res: Response) => {
     }
 
     try {
-        const processes = await processService.listProcesses(req.user.userId, page, pageSize, filter);
+        const processes = await processService.listProcesses(req.user.userId, isChefe, page, pageSize, filter);
         res.status(200).json(processes);
     } catch (err: any) {
         if (err instanceof ApiException) {

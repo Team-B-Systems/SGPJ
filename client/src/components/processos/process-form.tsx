@@ -5,7 +5,7 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useAuth } from '../../lib/auth-context';
-import { type Processo } from '../../lib/mock-data';
+import { Processo } from '../../lib/api';
 
 interface ProcessFormProps {
   processo?: Processo | null;
@@ -15,195 +15,130 @@ interface ProcessFormProps {
 
 export function ProcessForm({ processo, onSubmit, onCancel }: ProcessFormProps) {
   const { user } = useAuth();
-  const [formData, setFormData] = useState({
+
+  const [formData, setFormData] = useState<Omit<Processo, 'id'>>({
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     numeroProcesso: '',
-    titulo: '',
-    descricao: '',
-    status: 'ativo' as const,
-    dataAbertura: '',
-    dataUltimaAtualizacao: '',
-    responsavel: user?.nome || '',
-    categoria: '',
-    prioridade: 'media' as const,
+    dataAbertura: new Date().toISOString().split('T')[0],
+    assunto: '',
+    tipoProcesso: '',
+    estado: '',
+    dataEncerramento: null,
+    responsavel: user!,       // agora correto: User, não string
+    documentos: [],
+    parecer: null,
+    envolvidos: [],
+    reunioes: [],
   });
 
   useEffect(() => {
     if (processo) {
       setFormData({
-        numeroProcesso: processo.numeroProcesso,
-        titulo: processo.titulo,
-        descricao: processo.descricao,
-        status: processo.status,
-        dataAbertura: processo.dataAbertura,
-        dataUltimaAtualizacao: processo.dataUltimaAtualizacao,
-        responsavel: processo.responsavel,
-        categoria: processo.categoria,
-        prioridade: processo.prioridade,
+        ...processo,
+        updatedAt: new Date().toISOString(),
       });
     } else {
-      // Set current date for new processes
       const today = new Date().toISOString().split('T')[0];
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         dataAbertura: today,
-        dataUltimaAtualizacao: today,
+        updatedAt: today,
       }));
     }
   }, [processo]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Generate process number if creating new process
+
     if (!processo) {
+      // gera número de processo automaticamente
       const year = new Date().getFullYear();
       const processCount = Math.floor(Math.random() * 999) + 1;
       const numeroProcesso = `${year}-${processCount.toString().padStart(3, '0')}-JUR`;
-      
+
       onSubmit({
         ...formData,
         numeroProcesso,
-        dataUltimaAtualizacao: new Date().toISOString().split('T')[0],
       });
     } else {
       onSubmit({
         ...formData,
-        dataUltimaAtualizacao: new Date().toISOString().split('T')[0],
       });
     }
   };
-
-  const categorias = [
-    'Trabalhista',
-    'Civil',
-    'Criminal',
-    'Contratual',
-    'Tributário',
-    'Consultoria',
-    'Compliance',
-    'Outro'
-  ];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="titulo">Título do Processo *</Label>
+          <Label htmlFor="assunto">Assunto *</Label>
           <Input
-            id="titulo"
-            value={formData.titulo}
-            onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
-            placeholder="Digite o título do processo"
+            id="assunto"
+            value={formData.assunto}
+            onChange={(e) =>
+              setFormData({ ...formData, assunto: e.target.value })
+            }
+            placeholder="Digite o assunto do processo"
             required
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="categoria">Categoria *</Label>
-          <Select 
-            value={formData.categoria} 
-            onValueChange={(value) => setFormData({ ...formData, categoria: value })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione a categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              {categorias.map((categoria) => (
-                <SelectItem key={categoria} value={categoria}>
-                  {categoria}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="descricao">Descrição *</Label>
-        <Textarea
-          id="descricao"
-          value={formData.descricao}
-          onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-          placeholder="Descreva detalhadamente o processo"
-          rows={4}
-          required
-        />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
-          <Select 
-            value={formData.status} 
-            onValueChange={(value: 'ativo' | 'pendente' | 'arquivado') => 
-              setFormData({ ...formData, status: value })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ativo">Ativo</SelectItem>
-              <SelectItem value="pendente">Pendente</SelectItem>
-              <SelectItem value="arquivado">Arquivado</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="prioridade">Prioridade</Label>
-          <Select 
-            value={formData.prioridade} 
-            onValueChange={(value: 'baixa' | 'media' | 'alta') => 
-              setFormData({ ...formData, prioridade: value })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="baixa">Baixa</SelectItem>
-              <SelectItem value="media">Média</SelectItem>
-              <SelectItem value="alta">Alta</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="responsavel">Responsável</Label>
+          <Label htmlFor="tipoProcesso">Tipo de Processo *</Label>
           <Input
-            id="responsavel"
-            value={formData.responsavel}
-            onChange={(e) => setFormData({ ...formData, responsavel: e.target.value })}
-            placeholder="Nome do responsável"
+            id="tipoProcesso"
+            value={formData.tipoProcesso}
+            onChange={(e) =>
+              setFormData({ ...formData, tipoProcesso: e.target.value })
+            }
+            placeholder="Ex: Disciplinar, Laboral, Administrativo..."
+            required
           />
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="dataAbertura">Data de Abertura *</Label>
+          <Label htmlFor="estado">Estado *</Label>
           <Input
-            id="dataAbertura"
-            type="date"
-            value={formData.dataAbertura}
-            onChange={(e) => setFormData({ ...formData, dataAbertura: e.target.value })}
+            id="estado"
+            value={formData.estado}
+            onChange={(e) =>
+              setFormData({ ...formData, estado: e.target.value })
+            }
+            placeholder="Aberto, Em andamento, Encerrado..."
             required
           />
         </div>
 
-        {processo && (
+        {processo == null && (
           <div className="space-y-2">
-            <Label htmlFor="numeroProcesso">Número do Processo</Label>
+            <Label htmlFor="dataAbertura">Data de Abertura *</Label>
             <Input
-              id="numeroProcesso"
-              value={formData.numeroProcesso}
-              disabled
-              className="bg-gray-50"
+              id="dataAbertura"
+              type="date"
+              value={formData.dataAbertura}
+              onChange={(e) =>
+                setFormData({ ...formData, dataAbertura: e.target.value })
+              }
+              required
             />
           </div>
         )}
       </div>
+
+      {processo && (
+        <div className="space-y-2">
+          <Label htmlFor="numeroProcesso">Número do Processo</Label>
+          <Input
+            id="numeroProcesso"
+            value={formData.numeroProcesso}
+            disabled
+            className="bg-gray-50"
+          />
+        </div>
+      )}
 
       <div className="flex justify-end space-x-4 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>

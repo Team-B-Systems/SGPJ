@@ -26,7 +26,7 @@ export function FuncionariosPage() {
   const [selectedFuncionario, setSelectedFuncionario] = useState<Funcionario | null>(null);
 
   // Only allow admin access
-  if (user?.perfil !== 'administrador') {
+  if (user?.role !== 'Admin') {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">

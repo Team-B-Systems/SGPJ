@@ -187,7 +187,7 @@ export function DashboardHome() {
       </div>
 
       {/* Quick Actions - Only for Admin */}
-      {user?.perfil === 'administrador' && (
+      {user?.role === 'Admin' && (
         <Card>
           <CardHeader>
             <CardTitle>Ações Rápidas</CardTitle>

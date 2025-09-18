@@ -68,14 +68,27 @@ export const pesquisarReuniaoPorId = async (idReuniao: number) => {
 
 export const pesquisarReuniaoPorIdProcesso = async (idProcesso: number) => {
     const reuniao = await prisma.reuniao.findMany({
-        where: { processoId: idProcesso }
+        where: { processoId: idProcesso },
+        include: { comissao: true, documento: true }
     });
 
     if (reuniao.length === 0) {
         throw new ApiException(404, "Reunião não encontrada");
     }
 
-    return reuniao;
+    return reuniao.map((reuniao) => {{
+        const { documento, ...reuniaoSemDocumento } = reuniao;
+
+        if (documento) {
+            const { ficheiro, ...documentoSemFicheiro } = documento;
+            return { ...reuniaoSemDocumento, documento: documentoSemFicheiro };
+        }
+
+        return {
+            ...reuniaoSemDocumento,
+            documento: null
+        };
+    }});
 }
 
 export const pesquisarReuniaoPorIdComissao = async (idComissao: number) => {
