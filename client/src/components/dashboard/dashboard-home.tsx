@@ -2,26 +2,31 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { useAuth } from '../../lib/auth-context';
-import { 
-  FileText, 
-  Calendar, 
-  AlertTriangle, 
-  Users, 
-  TrendingUp, 
-  Clock 
+import { useProcessos } from '../../lib/processos-context';
+import {
+  FileText,
+  Calendar,
+  AlertTriangle,
+  Users,
+  TrendingUp,
+  Clock
 } from 'lucide-react';
-import { mockProcessos, mockQueixas, mockReunioes, mockDocumentos } from '../../lib/mock-data';
+import { useQueixa } from '../../lib/queixa-context';
+import { useNavigate } from 'react-router-dom'
 
 export function DashboardHome() {
   const { user } = useAuth();
+  const { processos } = useProcessos();
+  const { queixas } = useQueixa();
+  const navigate = useNavigate()
 
   const stats = {
-    processosAtivos: mockProcessos.filter(p => p.status === 'ativo').length,
-    processosPendentes: mockProcessos.filter(p => p.status === 'pendente').length,
-    queixasAbertas: mockQueixas.filter(q => q.status === 'aberta' || q.status === 'em_analise').length,
-    reunioesHoje: mockReunioes.filter(r => r.data === '2024-01-25').length,
-    documentosRecentes: mockDocumentos.length,
-    totalProcessos: mockProcessos.length
+    processosAtivos: processos.filter(p => p.estado === 'EmAndamento').length,
+    processosPendentes: processos.filter(p => p.estado === 'Aberto').length,
+    queixasAbertas: queixas.filter(q => q.estado === 'Pendente' || q.estado === 'EmAnalise').length,
+    reunioesHoje: 0,
+    documentosRecentes: processos.flatMap(p => p.documentos).length,
+    totalProcessos: processos.length
   };
 
   const getGreeting = () => {
@@ -31,14 +36,15 @@ export function DashboardHome() {
     return 'Boa noite';
   };
 
-  const processosRecentes = mockProcessos
-    .sort((a, b) => new Date(b.dataUltimaAtualizacao).getTime() - new Date(a.dataUltimaAtualizacao).getTime())
+  const processosRecentes = processos
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     .slice(0, 5);
 
-  const reunioesProximas = mockReunioes
+  /*
+    const reunioesProximas = mockReunioes
     .filter(r => r.status === 'agendada')
     .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
-    .slice(0, 3);
+    .slice(0, 3);*/
 
   return (
     <div className="space-y-6">
@@ -109,50 +115,42 @@ export function DashboardHome() {
 
       {/* Recent Activity */}
       {user?.role !== 'Admin' && (
-         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Processes */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Processos Recentes</CardTitle>
-            <CardDescription>Últimas atualizações em processos</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {processosRecentes.map((processo) => (
-                <div key={processo.id} className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{processo.titulo}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {processo.numeroProcesso} • {processo.responsavel}
-                    </p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Processes */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Processos Recentes</CardTitle>
+              <CardDescription>Últimas atualizações em processos</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {processosRecentes.map((processo) => (
+                  <div key={processo.id} className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{processo.assunto}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {processo.numeroProcesso} • {processo.responsavel.nome}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge
+                        variant={
+                          processo.estado === 'EmAndamento' ? 'default' :
+                            processo.estado === 'Aberto' ? 'secondary' :
+                              'outline'
+                        }
+                      >
+                        {processo.estado}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge 
-                      variant={
-                        processo.status === 'ativo' ? 'default' : 
-                        processo.status === 'pendente' ? 'secondary' : 
-                        'outline'
-                      }
-                    >
-                      {processo.status}
-                    </Badge>
-                    <Badge 
-                      variant={
-                        processo.prioridade === 'alta' ? 'destructive' :
-                        processo.prioridade === 'media' ? 'secondary' :
-                        'outline'
-                      }
-                    >
-                      {processo.prioridade}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Upcoming Meetings */}
+          {/* Upcoming Meetings */}
+          {/*
         <Card>
           <CardHeader>
             <CardTitle>Próximas Reuniões</CardTitle>
@@ -185,9 +183,10 @@ export function DashboardHome() {
             </div>
           </CardContent>
         </Card>
-      </div>
+        */}
+        </div>
       )}
-     
+
       {/* Quick Actions - Only for Admin */}
       {user?.role === 'Admin' && (
         <Card>
@@ -207,16 +206,27 @@ export function DashboardHome() {
         </Card>
       )}
 
-      {user?.role !== 'Admin' && ( <><div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-        <FileText className="h-8 w-8 text-green-600 mb-2" />
-        <h3 className="font-medium">Novo Processo</h3>
-        <p className="text-sm text-muted-foreground">Registrar novo processo jurídico</p>
-      </div><div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-          <AlertTriangle className="h-8 w-8 text-orange-600 mb-2" />
-          <h3 className="font-medium">Revisar Queixas</h3>
-          <p className="text-sm text-muted-foreground">Analisar queixas pendentes</p>
-        </div></>)}
-      
+      {user?.role !== 'Admin' && (
+        <>
+          <div
+            className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+            onClick={() => navigate('/processos')}
+          >
+            <FileText className="h-8 w-8 text-green-600 mb-2" />
+            <h3 className="font-medium">Novo Processo</h3>
+            <p className="text-sm text-muted-foreground">Registrar novo processo jurídico</p>
+          </div>
+          <div
+            className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+            onClick={() => navigate('/queixas')}
+          >
+            <AlertTriangle className="h-8 w-8 text-orange-600 mb-2" />
+            <h3 className="font-medium">Revisar Queixas</h3>
+            <p className="text-sm text-muted-foreground">Analisar queixas pendentes</p>
+          </div>
+        </>
+      )}
+
     </div>
   );
 }
