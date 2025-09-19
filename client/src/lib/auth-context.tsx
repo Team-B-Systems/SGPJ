@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import {
   login as apiLogin,
   getFuncionarioPerfil,
+  updateFuncionarioPerfil,
   type User,
 } from "../lib/api";
 
@@ -12,6 +13,7 @@ interface AuthContextType {
   login: (email: string, password: string, isAdmin: boolean) => Promise<boolean>;
   logout: () => void;
   getToken: () => string | null;
+  update: (nome: string) => Promise<void>;
 }
 
 interface SignupData {
@@ -85,6 +87,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
   };
 
+  const update = async (nome: string) => {
+    try {
+      const updatedUser = await updateFuncionarioPerfil({
+        nome: nome
+      });
+      setUser(updatedUser);
+      localStorage.removeItem("user");
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+    } catch (error) {
+      console.error("Erro ao atualizar perfil:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const getToken = () => localStorage.getItem("access_token");
 
   return (
@@ -96,6 +113,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         login,
         logout,
         getToken,
+        update,
       }}
     >
       {children}

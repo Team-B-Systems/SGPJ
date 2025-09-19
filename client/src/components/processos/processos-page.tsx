@@ -45,11 +45,6 @@ export function ProcessosPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingProcess, setEditingProcess] = useState<Processo | null>(null);
 
-  // ✅ carregar processos ao montar
-  useEffect(() => {
-    fetchProcessos();
-  }, [fetchProcessos]);
-
   const filteredProcessos = processos.filter(
     (processo) =>
       processo.assunto.toLowerCase().includes(searchTerm.toLowerCase()) ||

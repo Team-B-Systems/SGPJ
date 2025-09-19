@@ -33,5 +33,5 @@ export const editProfile = async (id: number, dto: EditDTO) => {
 
     const { senha, ...sanitizedUser } = updatedUser;
 
-    return sanitizedUser;
+    return updatedUser;
 }

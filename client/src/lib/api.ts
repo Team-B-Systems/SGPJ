@@ -175,8 +175,8 @@ export async function getFuncionarioPerfil(): Promise<User> {
 }
 
 export async function updateFuncionarioPerfil(data: Partial<User>): Promise<User> {
-  const response = await api.patch<User>("/funcionario/perfil", data);
-  return response.data;
+  const response = await api.patch("/funcionario/perfil", data);
+  return response.data.user;
 }
 
 export async function getAdminPerfil(): Promise<User> {

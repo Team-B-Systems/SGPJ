@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { useAuth } from '../../lib/auth-context';
@@ -16,7 +16,7 @@ import { useNavigate } from 'react-router-dom'
 
 export function DashboardHome() {
   const { user } = useAuth();
-  const { processos } = useProcessos();
+  const { processos, fetchProcessos } = useProcessos();
   const { queixas } = useQueixa();
   const navigate = useNavigate()
 
@@ -28,6 +28,10 @@ export function DashboardHome() {
     documentosRecentes: processos.flatMap(p => p.documentos).length,
     totalProcessos: processos.length
   };
+
+  useEffect(() => {
+    fetchProcessos();
+  }, [fetchProcessos]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();

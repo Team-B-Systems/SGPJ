@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -9,9 +9,10 @@ import { useAuth } from '../../lib/auth-context';
 import { User, Mail, Briefcase, Calendar, Shield, Edit } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
 import { TwoFactorSetup } from '../auth/two-factor-setup';
+import { updateFuncionarioPerfil } from '../../lib/api';
 
 export function PerfilPage() {
-  const { user } = useAuth();
+  const { user, update } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     nome: user?.nome || '',
@@ -24,15 +25,18 @@ export function PerfilPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      await update(formData.nome);
 
-    setSaveMessage('Perfil atualizado com sucesso!');
-    setIsEditing(false);
-
-    // Clear message after 3 seconds
-    setTimeout(() => setSaveMessage(''), 3000);
+      setSaveMessage("Perfil atualizado com sucesso!");
+      setIsEditing(false);
+    } catch (err) {
+      setSaveMessage("Erro ao atualizar perfil.");
+    } finally {
+      setTimeout(() => setSaveMessage(''), 3000);
+    }
   };
+
 
   const handleCancel = () => {
     setFormData({
@@ -64,11 +68,6 @@ export function PerfilPage() {
           'Gestão de funcionários',
           'Configurações do sistema',
           'Relatórios administrativos',
-          'Gestão de processos jurídicos',
-          'Gestão de documentos',
-          'Gestão de reuniões',
-          'Gestão de queixas',
-          'Gestão de comissões'
         ];
       case 'Chefe':
         return [
@@ -84,7 +83,7 @@ export function PerfilPage() {
           'Visualização de processos',
           'Gestão de documentos',
           'Participação em reuniões',
-          'Cadastrar queixas',
+          'Registar queixas',
           'Visualizar comissões'
         ];
       default:
@@ -95,7 +94,7 @@ export function PerfilPage() {
   if (!user) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Usuário não encontrado</p>
+        <p className="text-muted-foreground">Utilizador não encontrado</p>
       </div>
     );
   }
@@ -159,6 +158,7 @@ export function PerfilPage() {
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder="seu.email@empresa.com"
                       required
+                      disabled
                     />
                   </div>
 
@@ -170,6 +170,7 @@ export function PerfilPage() {
                       onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
                       placeholder="Seu cargo na empresa"
                       required
+                      disabled
                     />
                   </div>
 

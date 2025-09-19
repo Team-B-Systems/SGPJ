@@ -173,7 +173,6 @@ export function FuncionarioForm({ funcionario, onSubmit, onCancel }: Funcionario
             <SelectContent>
               <SelectItem value="Funcionário">Funcionário</SelectItem>
               <SelectItem value="Chefe">Chefe</SelectItem>
-              <SelectItem value="Admin">Administrador</SelectItem>
             </SelectContent>
           </Select>
         </div>
