@@ -106,10 +106,6 @@ export function EnvolvidosPage() {
     return tipo === 'Autor' ? 'default' : 'secondary';
   };
 
-  const getParteBadgeVariant = (parte: string) => {
-    return parte === 'ativa' ? 'default' : 'outline';
-  };
-
   const clearFilters = () => {
     setSearchTerm('');
     setSelectedProcesso('all');

@@ -146,11 +146,14 @@ export function DocumentoForm({ onSubmit, onCancel }: DocumentoFormProps) {
               <SelectValue placeholder="Selecione o processo" />
             </SelectTrigger>
             <SelectContent>
-              {processos.map((processo) => (
-                <SelectItem key={processo.id} value={processo.numeroProcesso}>
-                  {processo.numeroProcesso} - {processo.assunto}
-                </SelectItem>
-              ))}
+              {processos.map((processo) => {
+                if (processo.estado !== 'Arquivado') {
+                  return (<SelectItem key={processo.id} value={processo.numeroProcesso}>
+                    {processo.numeroProcesso} - {processo.assunto}
+                  </SelectItem>);
+                }
+                return null;
+              })}
             </SelectContent>
           </Select>
         </div>

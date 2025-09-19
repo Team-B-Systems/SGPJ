@@ -94,6 +94,7 @@ export function ProcessosPage() {
         await editProcess(editingProcess.id, {
           assunto: processData.assunto,
           tipoProcesso: processData.tipoProcesso,
+          estado: processData.estado,
         });
         await fetchProcessos();
       } catch (error) {
