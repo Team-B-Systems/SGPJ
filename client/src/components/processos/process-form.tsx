@@ -103,12 +103,13 @@ export function ProcessForm({ processo, onSubmit, onCancel }: ProcessFormProps) 
           <Label htmlFor="estado">Estado *</Label>
           <Input
             id="estado"
-            value={formData.estado}
+            value={processo ? formData.estado : 'Aberto'}
             onChange={(e) =>
               setFormData({ ...formData, estado: e.target.value })
             }
             placeholder="Aberto, Em andamento, Encerrado..."
             required
+            disabled={processo === null}
           />
         </div>
 

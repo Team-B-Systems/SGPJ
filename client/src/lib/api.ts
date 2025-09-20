@@ -246,6 +246,7 @@ export async function editProcess(
   data: {
     assunto?: string;
     tipoProcesso?: string;
+    estado?: string;
   }
 ): Promise<{
   process: Processo;

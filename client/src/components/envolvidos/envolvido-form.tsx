@@ -80,7 +80,7 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
       return;
     }
 
-    const findProcessoId = processos.find(p => p.numeroProcesso === formData.processoId.toString())?.id;
+    const findProcessoId = processos.find(p => p.numeroProcesso === formData.processoId.toString() && p.estado !== 'Arquivado')?.id;
     
     onSubmit({
       createdAt: envolvido ? envolvido.createdAt : new Date().toISOString(),
@@ -140,11 +140,14 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
                 <SelectValue placeholder="Selecione um processo" />
               </SelectTrigger>
               <SelectContent>
-                {processos.map((processo) => (
-                  <SelectItem key={processo.id} value={processo.numeroProcesso}>
+                {processos.map((processo) => {
+                  if (processo.estado !== 'Arquivado') {
+                    return (<SelectItem key={processo.id} value={processo.numeroProcesso}>
                     {processo.numeroProcesso} - {processo.assunto}
-                  </SelectItem>
-                ))}
+                  </SelectItem>);
+                  }
+                  return null;
+                })}
               </SelectContent>
             </Select>
             {errors.processoId && <p className="text-destructive mt-1">{errors.processoId}</p>}
