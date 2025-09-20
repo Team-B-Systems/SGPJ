@@ -94,12 +94,32 @@ enum EnvolvidoPapelNoProcesso {
   Outro
 }
 
+enum TipoEvento {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  OTHER
+}
+
+model EventoSistema {
+  id           Int       @id @default(autoincrement())
+  createdAt    DateTime  @default(now())
+  funcionarioId    Int?
+  funcionario      Funcionario? @relation(fields: [funcionarioId], references: [id])
+  entidade     String    // ex.: "ProcessoJuridico", "Documento", "Queixa"
+  entidadeId   Int?      // id da entidade afetada
+  tipoEvento   TipoEvento
+  descricao    String    // texto descritivo da ação
+}
+
 model Funcionario {
   id                  Int                       @id @default(autoincrement())
   createdAt           DateTime                  @default(now())
   updatedAt           DateTime                  @updatedAt
   nome                String
-  numeroIdentificacao String
+  numeroIdentificacao String                    @unique
   email               String                    @unique
   categoria           CategoriaFuncionario
   senha               String
@@ -107,10 +127,13 @@ model Funcionario {
   role                Role
   departamentoId      Int
   departamento        Departamento              @relation(fields: [departamentoId], references: [id])
-  queixas             Queixa []
+  queixas             Queixa[]
   comissao            ComissaoFuncionario[]
   partePassiva        FuncionarioPartePassiva[]
   processos           ProcessoJuridico[] // Apenas para funcionários do departamento Jurídico
+  envolvido           Envolvido?
+
+  EventoSistema EventoSistema[]
 }
 
 model Departamento {
@@ -237,8 +260,10 @@ model Envolvido {
   createdAt           DateTime                    @default(now())
   updatedAt           DateTime                    @updatedAt
   nome                String
-  numeroIdentificacao String
-  papelNoProcesso     EnvolvidoPapelNoProcesso
+  numeroIdentificacao String                      @unique
+  interno             Boolean                     @default(false)
+  funcionarioId       Int?                        @unique
+  funcionario         Funcionario?                @relation(fields: [funcionarioId], references: [id])
   processosJuridicos  EnvolvidoProcessoJuridico[]
 }
 
@@ -274,11 +299,12 @@ model FuncionarioPartePassiva {
 }
 
 model EnvolvidoProcessoJuridico {
-  id                 Int              @id @default(autoincrement())
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  id                 Int                      @id @default(autoincrement())
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  papelNoProcesso    EnvolvidoPapelNoProcesso
   envolvidoId        Int
   processoJuridicoId Int
-  envolvido          Envolvido        @relation(fields: [envolvidoId], references: [id])
-  processo           ProcessoJuridico @relation(fields: [processoJuridicoId], references: [id])
+  envolvido          Envolvido                @relation(fields: [envolvidoId], references: [id])
+  processo           ProcessoJuridico         @relation(fields: [processoJuridicoId], references: [id])
 }

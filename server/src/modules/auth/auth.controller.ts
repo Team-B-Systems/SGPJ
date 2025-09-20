@@ -10,7 +10,7 @@ export const signup = async (req: Request, res: Response) => {
         if (err instanceof ApiException) {
             res.status(err.status).json({ error: err.message });
         } else {
-            res.status(500).json({ error: `Internal Server Error ${err.message}` });
+            res.status(500).json({ error: `Erro interno no servidor` });
         }
     }
 };
@@ -23,7 +23,7 @@ export const login = async (req: Request, res: Response) => {
         if (err instanceof ApiException) {
             res.status(err.status).json({ error: err.message });
         } else {
-            res.status(500).json({ error: `Internal Server Error ${err.message}` });
+            res.status(500).json({ error: `Erro interno no servidor` });
         }
     }
 };

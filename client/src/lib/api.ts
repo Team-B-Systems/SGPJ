@@ -61,16 +61,18 @@ export interface Envolvido {
   id: number;
   createdAt: string;
   updatedAt: string;
-  envolvidoId: number;
-  processoJuridicoId: number;
+  envolvidoId: number;           // referência ao envolvido
+  processoJuridicoId: number;   // id do processo associado
+  papelNoProcesso: string;
   envolvido: {
     id: number;
     createdAt: string;
     updatedAt: string;
     nome: string;
     numeroIdentificacao: string;
-    papelNoProcesso: string;
-  }
+    funcionarioId?: number;     // se for um funcionário interno
+    interno: boolean;           // true se for funcionário interno
+  };
 }
 
 interface Comissao {

@@ -1,5 +1,5 @@
 // lib/funcionarios-context.tsx
-import React, { createContext, useCallback, useContext, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { getFuncionario, User, searchFuncionario, createFuncionario, updateFuncionario as apiUpdateFuncionario } from "./api";
 
 interface FuncionariosContextType {
@@ -69,6 +69,10 @@ export const FuncionariosProvider = ({ children }: { children: React.ReactNode }
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    fetchFuncionarios();
+  }, [])
 
   return (
     <FuncionariosContext.Provider value={{ 

@@ -26,6 +26,7 @@ export const ProcessosProvider = ({ children }: { children: React.ReactNode }) =
     setLoading(true);
     try {
       const data: ProcessoListResponse = await getProcessos(pageParam, pageSizeParam);
+      console.log(data.processes)
       setProcessos(data.processes);
       setTotal(data.total);
       setPage(data.page);

@@ -43,7 +43,7 @@ export function EnvolvidosPage() {
         envolvido.envolvido.numeroIdentificacao.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesProcesso = selectedProcesso === 'all' || processos.find(p => p.id === envolvido.processoJuridicoId)?.numeroProcesso === selectedProcesso;
-      const matchesTipo = selectedTipo === 'all' || envolvido.envolvido.papelNoProcesso === selectedTipo;
+      const matchesTipo = selectedTipo === 'all' || envolvido.papelNoProcesso === selectedTipo;
 
       return matchesSearch && matchesProcesso && matchesTipo;
     });
@@ -58,7 +58,7 @@ export function EnvolvidosPage() {
         processoId: envolvidoData.processoJuridicoId,
         nome: envolvidoData.envolvido.nome,
         numeroIdentificacao: envolvidoData.envolvido.numeroIdentificacao,
-        papel: envolvidoData.envolvido.papelNoProcesso,
+        papel: envolvidoData.papelNoProcesso,
       };
 
       await addParteEnvolvida(dto);
@@ -152,7 +152,7 @@ export function EnvolvidosPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Peritos</p>
                 <p className="text-xl font-semibold">
-                  {envolvidos.filter(e => e.envolvido.papelNoProcesso === 'Perito').length}
+                  {envolvidos.filter(e => e.papelNoProcesso === 'Perito').length}
                 </p>
               </div>
             </div>
@@ -166,7 +166,7 @@ export function EnvolvidosPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Testemunhas</p>
                 <p className="text-xl font-semibold">
-                  {envolvidos.filter(e => e.envolvido.papelNoProcesso === 'Autor').length}
+                  {envolvidos.filter(e => e.papelNoProcesso === 'Autor').length}
                 </p>
               </div>
             </div>
@@ -290,8 +290,8 @@ export function EnvolvidosPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getTipoBadgeVariant(envolvido.envolvido.papelNoProcesso)}>
-                        {envolvido.envolvido.papelNoProcesso}
+                      <Badge variant={getTipoBadgeVariant(envolvido.papelNoProcesso)}>
+                        {envolvido.papelNoProcesso}
                       </Badge>
                     </TableCell>
                     <TableCell>{envolvido.envolvido.numeroIdentificacao}</TableCell>
@@ -361,6 +361,7 @@ export function EnvolvidosPage() {
         }}
         onSubmit={handleSubmitEnvolvido}
         envolvido={selectedEnvolvido || undefined}
+        processoId={selectedEnvolvido?.processoJuridicoId || undefined}
       />
     </div>
   );

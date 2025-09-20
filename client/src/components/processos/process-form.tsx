@@ -13,6 +13,13 @@ interface ProcessFormProps {
   onCancel: () => void;
 }
 
+const tiposProcesso = [
+  'Disciplinar',
+  'Laboral',
+  'Administrativo',
+  'Civil'
+];
+
 export function ProcessForm({ processo, onSubmit, onCancel }: ProcessFormProps) {
   const { user } = useAuth();
 
@@ -86,15 +93,25 @@ export function ProcessForm({ processo, onSubmit, onCancel }: ProcessFormProps) 
 
         <div className="space-y-2">
           <Label htmlFor="tipoProcesso">Tipo de Processo *</Label>
-          <Input
+          <Select
             id="tipoProcesso"
             value={formData.tipoProcesso}
-            onChange={(e) =>
-              setFormData({ ...formData, tipoProcesso: e.target.value })
+            onValueChange={(e: any) =>
+              setFormData({ ...formData, tipoProcesso: e })
             }
-            placeholder="Ex: Disciplinar, Laboral, Administrativo..."
             required
-          />
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione o tipo de processo" />
+            </SelectTrigger>
+            <SelectContent>
+              {tiposProcesso.map((tipo, index) => (
+                <SelectItem key={index} value={tipo}>
+                  {tipo}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
