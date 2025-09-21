@@ -425,7 +425,7 @@ export default function App() {
     { id: 1, nome: 'Genuino Cavquila', email: 'cavuquila@escritorio.com', perfil: 'admin', status: 'Pendente', ultimoAcesso: '15/08/2023 14:30' },
     { id: 2, nome: 'Vilma Cajama', email: 'viltrudes@escritorio.com', perfil: 'Técnico Jurídico', status: 'Pendente', ultimoAcesso: '15/08/2023 09:15' },
     { id: 3, nome: 'Kenedy Bundi', email: 'kenedi@gmail.com', perfil: 'estagiario', status: 'Pendente', ultimoAcesso: '14/08/2023 16:45' },
-    { id: 4, nome: 'Tchipita Armadon', email: 'armando@escritorio.com', perfil: 'secretario', status: 'inPendente', ultimoAcesso: '10/08/2023 11:20' }
+    { id: 4, nome: 'Tchipita Armadon', email: 'armando@escritorio.com', perfil: 'Membro', status: 'inPendente', ultimoAcesso: '10/08/2023 11:20' }
   ]);
 
   const [audiencias, setAudiencias] = useState(() => JSON.parse(localStorage.getItem('audiencias')) || [
@@ -668,7 +668,7 @@ export default function App() {
                 <option value="admin">Administrador</option>
                 <option value="Técnico Jurídico">Técnico Juridico</option>
                 <option value="estagiario">Chefe Departamento</option>
-                <option value="secretario">Outro</option>
+                <option value="membro">Outro</option>
               </select>
             </div>
             <div className="form-group">

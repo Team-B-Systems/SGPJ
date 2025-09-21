@@ -35,15 +35,15 @@ export const adicionarParteEnvolvida = async (userId: number, dto: AdicionarDTO)
         throw new ApiException(400, "Parte envolvida já associada a este processo");
     }
 
-    const parteEnvolvida = await prisma.envolvido.create({
-        data: {
-            nome: dto.nome,
-            numeroIdentificacao: dto.numeroIdentificacao,
-           // papelNoProcesso: dto.papel,
-        },
-    });
+    // const parteEnvolvida = await prisma.envolvido.create({
+    //     data: {
+    //         nome: dto.nome,
+    //         numeroIdentificacao: dto.numeroIdentificacao,
+    //        // papelNoProcesso: dto.papel,
+    //     },
+    // });
 
-    // await prisma.envolvidoProcessoJuridico.create({
+    // // await prisma.envolvidoProcessoJuridico.create({
     //     data: {
     //         processoJuridicoId: processo.id,
     //         envolvidoId: parteEnvolvida.id,
@@ -52,7 +52,7 @@ export const adicionarParteEnvolvida = async (userId: number, dto: AdicionarDTO)
 
     return {
         message: "Parte envolvida adicionada com sucesso",
-        parteEnvolvida,
+        //parteEnvolvida,
     };
 }
 
