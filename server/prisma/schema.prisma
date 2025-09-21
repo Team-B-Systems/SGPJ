@@ -54,6 +54,7 @@ enum EstadoQueixa {
 }
 
 enum EstadoComissao {
+  Pendente
   Aprovada
   Rejeitada
   Dispensada
@@ -62,7 +63,6 @@ enum EstadoComissao {
 enum PapelComissaoFuncionario {
   Presidente
   Membro
-  Secretario
 }
 
 enum CategoriaFuncionario {

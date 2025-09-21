@@ -39,16 +39,16 @@ export const adicionarParteEnvolvida = async (userId: number, dto: AdicionarDTO)
         data: {
             nome: dto.nome,
             numeroIdentificacao: dto.numeroIdentificacao,
-            papelNoProcesso: dto.papel,
+           // papelNoProcesso: dto.papel,
         },
     });
 
-    await prisma.envolvidoProcessoJuridico.create({
-        data: {
-            processoJuridicoId: processo.id,
-            envolvidoId: parteEnvolvida.id,
-        },
-    });
+    // await prisma.envolvidoProcessoJuridico.create({
+    //     data: {
+    //         processoJuridicoId: processo.id,
+    //         envolvidoId: parteEnvolvida.id,
+    //     },
+    // });
 
     return {
         message: "Parte envolvida adicionada com sucesso",
