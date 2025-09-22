@@ -1,29 +1,37 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import React, { useEffect, useState } from 'react';
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle
+} from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from '../ui/table';
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger
+} from '../ui/dialog';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from '../ui/select';
 import { Avatar, AvatarFallback } from '../ui/avatar';
-import { 
-  Plus, 
-  Search, 
-  Edit, 
-  Eye, 
-  Users,
-  UserPlus,
-  Calendar,
-  Building,
-  Settings,
-  Shield
+import {
+  Plus, Search, Edit, Eye, Users, UserPlus, Calendar, Building, Settings, Shield
 } from 'lucide-react';
-import { mockComissoes, mockFuncionarios, type Comissao } from '../../lib/mock-data';
+import { useFuncionarios } from '../../lib/funcionarios-context';
+import { useComissao } from '../../lib/comissao-context';
+import { type ComissaoCreate, type User, addComissaoMembro, createComissao, editComissao } from '../../lib/api';
 import { ComissaoForm } from './comissao-form';
 
+// Tipo com id (para listar)
+interface Comissao extends ComissaoCreate {
+  id: number;
+}
+
 export function ComissoesPage() {
-  const [comissoes, setComissoes] = useState<Comissao[]>(mockComissoes);
+  const { funcionarios, fetchFuncionarios } = useFuncionarios();
+  const { comissoes, fetchComissoes } = useComissao();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedComissao, setSelectedComissao] = useState<Comissao | null>(null);
@@ -31,92 +39,94 @@ export function ComissoesPage() {
   const [editingComissao, setEditingComissao] = useState<Comissao | null>(null);
   const [showMemberDialog, setShowMemberDialog] = useState(false);
   const [selectedMemberComissao, setSelectedMemberComissao] = useState<Comissao | null>(null);
-  const [selectedMember, setSelectedMember] = useState<string>('');
+  const [selectedMember, setSelectedMember] = useState<number | null>(null);
 
   const filteredComissoes = comissoes.filter(comissao => {
-    const matchesSearch = comissao.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         comissao.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         comissao.responsavel.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = selectedStatus === 'all' || !selectedStatus || comissao.status === selectedStatus;
-    
+    const matchesSearch =
+      comissao.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      comissao.descricao.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus =
+      selectedStatus === 'all' || !selectedStatus || comissao.estado === selectedStatus;
+
     return matchesSearch && matchesStatus;
   });
 
-  const handleCreateComissao = (comissaoData: Omit<Comissao, 'id'>) => {
-    const newComissao: Comissao = {
-      ...comissaoData,
-      id: (comissoes.length + 1).toString(),
-    };
-    setComissoes([...comissoes, newComissao]);
+  useEffect(() => {
+    fetchFuncionarios();
+    fetchComissoes()
+  }, []);
+
+  const handleCreateComissao = (comissaoData: ComissaoCreate) => {
+    createComissao(comissaoData);
     setShowForm(false);
   };
 
-  const handleEditComissao = (comissaoData: Omit<Comissao, 'id'>) => {
-    if (editingComissao) {
-      const updatedComissoes = comissoes.map(c =>
-        c.id === editingComissao.id ? { ...comissaoData, id: editingComissao.id } : c
-      );
-      setComissoes(updatedComissoes);
+  const handleEditComissao = (comissaoData: ComissaoCreate, id?: number) => {
+    if (id) {
+      editComissao(id, comissaoData);
       setEditingComissao(null);
       setShowForm(false);
     }
   };
 
-  const handleStatusChange = (id: string, newStatus: 'ativa' | 'inativa') => {
-    const updatedComissoes = comissoes.map(c =>
-      c.id === id ? { ...c, status: newStatus } : c
-    );
-    setComissoes(updatedComissoes);
+  const handleStatusChange = (id: number, newStatus: 'ativa' | 'inativa') => {
+    // update backend
   };
 
-  const handleAddMember = () => {
+  const handleAddMember = (comissaoData: ComissaoCreate) => {
+    console.log('ADD MEMBRO');
     if (selectedMemberComissao && selectedMember) {
-      const funcionario = mockFuncionarios.find(f => f.id === selectedMember);
-      if (funcionario && !selectedMemberComissao.membros.includes(funcionario.nome)) {
-        const updatedComissoes = comissoes.map(c =>
-          c.id === selectedMemberComissao.id 
-            ? { ...c, membros: [...c.membros, funcionario.nome] }
-            : c
-        );
-        setComissoes(updatedComissoes);
-        setSelectedMember('');
+      const funcionario = funcionarios.find((f: User) => f.id?.toString() === selectedMember.toString());
+      if (funcionario) {
+        const newMember = {
+          email: funcionario.email,
+          papel: "Membro"
+        }
+        addComissaoMembro(selectedMemberComissao.id, newMember)
+        setSelectedMember(null);
         setShowMemberDialog(false);
       }
     }
   };
 
-  const handleRemoveMember = (comissaoId: string, memberName: string) => {
-    const updatedComissoes = comissoes.map(c =>
-      c.id === comissaoId 
-        ? { ...c, membros: c.membros.filter(m => m !== memberName) }
-        : c
-    );
-    setComissoes(updatedComissoes);
+  const handleRemoveMember = (comissaoId: number, funcionarioId: number) => {
+    // salvar no backend
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'ativa':
-        return <Badge className="bg-green-100 text-green-800">Ativa</Badge>;
-      case 'inativa':
-        return <Badge className="bg-gray-100 text-gray-800">Inativa</Badge>;
+      case 'Aprovada':
+        return <Badge className="bg-green-100 text-green-800">Aprovada</Badge>;
+      case 'Rejeitada':
+        return <Badge className="bg-gray-100 text-gray-800">Rejeitada</Badge>;
+      case 'Dispensada':
+        return <Badge className="bg-gray-100 text-gray-800">Dispensada</Badge>;
+      case 'Pendente':
+        return <Badge className="bg-gray-100 text-gray-800">Pendente</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
+  const getInitials = (name: string | undefined | null) =>
+    (name ?? '')
+      .split(' ')
+      .filter(Boolean) // remove strings vazias
+      .map(n => n.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+
 
   const stats = {
     total: comissoes.length,
-    ativas: comissoes.filter(c => c.status === 'ativa').length,
-    inativas: comissoes.filter(c => c.status === 'inativa').length,
-    totalMembros: comissoes.reduce((acc, c) => acc + c.membros.length, 0),
+    ativas: comissoes.filter(c => c.estado === 'Aprovada').length,
+    dispensadas: comissoes.filter(c => c.estado === 'Dispensada').length,
+    rejeitadas: comissoes.filter(c => c.estado === 'Rejeitada').length,
+    pendentes: comissoes.filter(c => c.estado === 'Pendente').length,
+    totalFuncionarios: comissoes.reduce((acc, c) => acc + c.funcionarios.length, 0),
   };
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -148,7 +158,7 @@ export function ComissoesPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ativas</CardTitle>
+            <CardTitle className="text-sm font-medium">Aprovadas</CardTitle>
             <Shield className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -159,12 +169,36 @@ export function ComissoesPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inativas</CardTitle>
+            <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
             <Settings className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-600">{stats.inativas}</div>
-            <p className="text-xs text-muted-foreground">suspensas</p>
+            <div className="text-2xl font-bold text-gray-600">{stats.pendentes}</div>
+            <p className="text-xs text-muted-foreground">pendentes</p>
+          </CardContent>
+        </Card>
+
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Rejeitadas</CardTitle>
+            <Settings className="h-4 w-4 text-gray-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-600">{stats.rejeitadas}</div>
+            <p className="text-xs text-muted-foreground">rejeitadas</p>
+          </CardContent>
+        </Card>
+
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Dispensadas</CardTitle>
+            <Settings className="h-4 w-4 text-gray-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-600">{stats.dispensadas}</div>
+            <p className="text-xs text-muted-foreground">dispensadas</p>
           </CardContent>
         </Card>
 
@@ -174,7 +208,7 @@ export function ComissoesPage() {
             <Users className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.totalMembros}</div>
+            <div className="text-2xl font-bold text-blue-600">{stats.totalFuncionarios}</div>
             <p className="text-xs text-muted-foreground">total de membros</p>
           </CardContent>
         </Card>
@@ -201,8 +235,10 @@ export function ComissoesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="ativa">Ativa</SelectItem>
-                  <SelectItem value="inativa">Inativa</SelectItem>
+                  <SelectItem value="Aprovada">Aprovada</SelectItem>
+                  <SelectItem value="Rejeitada">Rejeitada</SelectItem>
+                  <SelectItem value="Dispensada">Dispensada</SelectItem>
+                  <SelectItem value="Pendente">Pendente</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -230,14 +266,15 @@ export function ComissoesPage() {
                   <TableHead>Comissão</TableHead>
                   <TableHead>Responsável</TableHead>
                   <TableHead>Membros</TableHead>
-                  <TableHead>Data Formação</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Data Criação</TableHead>
+                  <TableHead>Data Encenrramento</TableHead>
+                  <TableHead>Estado</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredComissoes.map((comissao) => (
-                  <TableRow key={comissao.id}>
+                {filteredComissoes.map((comissao, index) => (
+                  <TableRow key={index}>
                     <TableCell>
                       <div>
                         <p className="font-medium">{comissao.nome}</p>
@@ -247,33 +284,37 @@ export function ComissoesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="text-xs">
-                            {getInitials(comissao.responsavel)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm">{comissao.responsavel}</span>
+                      <div className="flex -space-x-2">
+                        {comissao.funcionarios.map((membro) => (
+                          <Avatar
+                            key={membro.id}
+                            className="h-6 w-6 border-2 border-background"
+                          >
+                            <AvatarFallback className="text-xs">
+                              {getInitials(membro.funcionario?.nome || "")}
+                            </AvatarFallback>
+                          </Avatar>
+                        ))}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <div className="flex -space-x-2">
-                          {comissao.membros.slice(0, 3).map((membro, index) => (
+                          {comissao.funcionarios.slice(0, 3).map((membro, index) => (
                             <Avatar key={index} className="h-6 w-6 border-2 border-background">
                               <AvatarFallback className="text-xs">
-                                {getInitials(membro)}
+                                {getInitials(membro.funcionario?.nome)}
                               </AvatarFallback>
                             </Avatar>
                           ))}
-                          {comissao.membros.length > 3 && (
+                          {comissao.funcionarios.length > 3 && (
                             <div className="h-6 w-6 rounded-full bg-muted border-2 border-background flex items-center justify-center">
-                              <span className="text-xs">+{comissao.membros.length - 3}</span>
+                              <span className="text-xs">+{comissao.funcionarios.length - 3}</span>
                             </div>
                           )}
                         </div>
                         <span className="text-sm text-muted-foreground">
-                          {comissao.membros.length} membro{comissao.membros.length !== 1 ? 's' : ''}
+                          {comissao.funcionarios.length} membro{comissao.funcionarios.length !== 1 ? 's' : ''}
                         </span>
                       </div>
                     </TableCell>
@@ -281,11 +322,21 @@ export function ComissoesPage() {
                       <div className="flex items-center">
                         <Calendar className="w-3 h-3 mr-1 text-muted-foreground" />
                         <span className="text-sm">
-                          {new Date(comissao.dataFormacao).toLocaleDateString('pt-BR')}
+                          {new Date(comissao.dataCriacao).toLocaleDateString('pt-PT')}
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>{getStatusBadge(comissao.status)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Calendar className="w-3 h-3 mr-1 text-muted-foreground" />
+                        <span className="text-sm">
+                          {comissao.dataEncerramento
+                            ? new Date(comissao.dataEncerramento).toLocaleDateString('pt-PT')
+                            : 'Não definida'}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{getStatusBadge(comissao.estado)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Dialog>
@@ -314,45 +365,74 @@ export function ComissoesPage() {
                                       {selectedComissao.descricao}
                                     </p>
                                   </div>
-                                  {getStatusBadge(selectedComissao.status)}
+                                  {getStatusBadge(selectedComissao.estado)}
                                 </div>
-                                
+
                                 <div className="grid grid-cols-2 gap-4">
                                   <div>
                                     <h4 className="font-medium mb-1">Responsável</h4>
-                                    <p className="text-sm">{selectedComissao.responsavel}</p>
+                                    <p className="text-sm">   {
+                                      funcionarios.find(
+                                        (f) =>
+                                          f.id ===
+                                          selectedComissao.funcionarios.find(
+                                            (m) => m.papel === "Presidente"
+                                          )?.funcionarioId
+                                      )?.nome || "Não definido"
+                                    }</p>
                                   </div>
                                   <div>
                                     <h4 className="font-medium mb-1">Data de Formação</h4>
                                     <p className="text-sm">
-                                      {new Date(selectedComissao.dataFormacao).toLocaleDateString('pt-BR')}
+                                      {new Date(selectedComissao.dataCriacao).toLocaleDateString('pt-BR')}
                                     </p>
                                   </div>
                                 </div>
 
                                 <div>
-                                  <h4 className="font-medium mb-2">Membros ({selectedComissao.membros.length})</h4>
+                                  <h4 className="font-medium mb-2">
+                                    Funcionários ({selectedComissao.funcionarios.length})
+                                  </h4>
+
                                   <div className="space-y-2">
-                                    {selectedComissao.membros.map((membro, index) => (
-                                      <div key={index} className="flex items-center justify-between p-2 border rounded-lg">
+                                    {selectedComissao.funcionarios.map((membro, index) => (
+                                      <div
+                                        key={index}
+                                        className="flex items-center justify-between p-2 border rounded-lg"
+                                      >
                                         <div className="flex items-center gap-2">
                                           <Avatar className="h-8 w-8">
                                             <AvatarFallback className="text-xs">
-                                              {getInitials(membro)}
+                                              {getInitials(
+                                                funcionarios.find(
+                                                  (f) => f.id === membro.funcionarioId.toString()
+                                                )?.nome || ""
+                                              )}
                                             </AvatarFallback>
                                           </Avatar>
-                                          <span className="text-sm">{membro}</span>
-                                          {membro === selectedComissao.responsavel && (
+
+                                          <span className="text-sm">
+                                            {
+                                              funcionarios.find(
+                                                (f) => f.id === membro.funcionarioId.toString()
+                                              )?.nome
+                                            }
+                                          </span>
+
+                                          {membro.papel === "Presidente" && (
                                             <Badge variant="outline" className="text-xs">
                                               Responsável
                                             </Badge>
                                           )}
                                         </div>
-                                        {membro !== selectedComissao.responsavel && (
+
+                                        {membro.papel !== "Presidente" && (
                                           <Button
                                             variant="ghost"
                                             size="sm"
-                                            onClick={() => handleRemoveMember(selectedComissao.id, membro)}
+                                            onClick={() =>
+                                              handleRemoveMember(selectedComissao.id, membro.funcionarioId)
+                                            }
                                           >
                                             Remover
                                           </Button>
@@ -374,7 +454,7 @@ export function ComissoesPage() {
                                     <UserPlus className="w-4 h-4 mr-2" />
                                     Adicionar Membro
                                   </Button>
-                                  {selectedComissao.status === 'ativa' ? (
+                                  {selectedComissao.estado === 'Aprovada' ? (
                                     <Button
                                       variant="outline"
                                       size="sm"
@@ -435,8 +515,8 @@ export function ComissoesPage() {
               {editingComissao ? 'Editar Comissão' : 'Nova Comissão'}
             </DialogTitle>
             <DialogDescription>
-              {editingComissao 
-                ? 'Atualize as informações da comissão' 
+              {editingComissao
+                ? 'Atualize as informações da comissão'
                 : 'Cadastre uma nova comissão'
               }
             </DialogDescription>
@@ -467,20 +547,18 @@ export function ComissoesPage() {
                 <SelectValue placeholder="Selecione um funcionário" />
               </SelectTrigger>
               <SelectContent>
-                {mockFuncionarios
-                  .filter(f => !selectedMemberComissao?.membros.includes(f.nome))
-                  .map((funcionario) => (
-                    <SelectItem key={funcionario.id} value={funcionario.id}>
-                      {funcionario.nome} - {funcionario.cargo}
-                    </SelectItem>
-                  ))}
+                {funcionarios.map(funcionario => (
+                  <SelectItem key={funcionario.id} value={funcionario.id?.toString()}>
+                    {funcionario.nome}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={() => setShowMemberDialog(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleAddMember} disabled={!selectedMember}>
+              <Button onClick={() => selectedMemberComissao && handleAddMember(selectedMemberComissao)} disabled={!selectedMember}>
                 Adicionar
               </Button>
             </div>

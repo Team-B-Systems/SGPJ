@@ -12,21 +12,18 @@ export const criarComissao = async (dto: comissaoDto) => {
             dataCriacao: dto.dataCriacao,
             descricao: dto.descricao,
             estado: dto.estado,
-            funcionarios:
-            {
-                connect: { id: dto.funcionario }
+        }
+    });
+
+    await Promise.all(dto.funcionarios.map(m =>
+        prisma.comissaoFuncionario.create({
+            data: {
+                comissaoId: newComissao.id,
+                funcionarioId: m.funcionarioId,
+                papel: m.papel
             }
-        }
-    });
-
-    await prisma.comissaoFuncionario.create({
-        data: {
-            comissaoId: newComissao.id,
-            funcionarioId: dto.funcionario,
-            papel: dto.papel
-
-        }
-    });
+        })
+    ));
 
     const { ...sanitizedComissao } = newComissao
     return sanitizedComissao
@@ -34,28 +31,67 @@ export const criarComissao = async (dto: comissaoDto) => {
 
 export const editar = async (comissaoId: number, dto: comissaoDto) => {
     const comissao = await prisma.comissao.findUnique({
-        where: { id: comissaoId }
+        where: { id: comissaoId },
+        include: { funcionarios: true }
     });
 
     if (!comissao) {
         throw new ApiException(404, "Comissão não encontrada");
     }
 
-    if (comissao.estado === dto.estado) {
-        throw new ApiException(400, `A comissão já se encontra no estado ${dto.estado}`);
+    if (comissao.dataEncerramento) {
+        throw new ApiException(400, "A comissão já se encontra Encerrada");
+    }
+    // Validações de estado
+    if (comissao.estado === EstadoComissao.Pendente && dto.estado === EstadoComissao.Dispensada) {
+        throw new ApiException(400, "A comissão já se encontra pendente");
     }
 
-    const updateComissao = await prisma.comissao.update({
+    if (comissao.estado === EstadoComissao.Rejeitada && dto.estado !== EstadoComissao.Rejeitada) {
+        throw new ApiException(400, "A comissão já se encontra rejeitada");
+    }
+
+    // if (comissao.estado === EstadoComissao.Aprovada && dto.estado !== EstadoComissao.Dispensada) {
+    //     throw new ApiException(400, "A comissão já foi aprovada");
+    // }
+
+    if (comissao.estado === EstadoComissao.Dispensada) {
+        throw new ApiException(400, "A comissão já se encontra dispensada");
+    }
+
+    // Atualiza dados da comissão
+    const updatedComissao = await prisma.comissao.update({
         where: { id: comissaoId },
         data: {
+            nome: dto.nome,
+            descricao: dto.descricao,
+            dataCriacao: new Date(dto.dataCriacao),
+            dataEncerramento: dto.dataEncerramento ? new Date(dto.dataEncerramento) : null,
             estado: dto.estado
-        },
+        }
     });
 
-    const { id, ...sanitizedQueixa } = updateComissao
-    return sanitizedQueixa;
+    // Se vierem novos membros, substitui os antigos
+    if (dto.funcionarios && dto.funcionarios.length > 0) {
+        await prisma.comissaoFuncionario.deleteMany({
+            where: { comissaoId }
+        });
 
+        await Promise.all(dto.funcionarios.map(m =>
+            prisma.comissaoFuncionario.create({
+                data: {
+                    comissaoId,
+                    funcionarioId: m.funcionarioId,
+                    papel: m.papel
+                }
+            })
+        ));
+    }
+
+    const { id, ...sanitized } = updatedComissao;
+    return sanitized;
 };
+
 
 export const visualizar = async () => {
     const comissoes = await prisma.comissao.findMany({
@@ -72,6 +108,7 @@ export const visualizar = async () => {
             id: comissao.id,
             nome: comissao.nome,
             descricao: comissao.descricao,
+            dataCriacao: comissao.dataCriacao,
             estado: comissao.estado,
             dataEncerramento: comissao.dataEncerramento,
             funcionarios: comissao.funcionarios,
@@ -95,41 +132,55 @@ export const pesquisarPorId = async (comissaoId: number) => {
 export const adicionarMembro = async (comissaoId: number, dto: adicionarMembroDto) => {
     const funcionario = await prisma.funcionario.findFirst({
         where: { email: dto.email }
-    })
-
-    if (!funcionario) {
-        throw new ApiException(404, "O funcionário não encontrado");
-    }
-
-    const comissaoMembro = await prisma.comissaoFuncionario.findFirst({
-        where: {
-            comissaoId: comissaoId, funcionarioId: funcionario.id
-        }
     });
 
-    if (comissaoMembro) {
-        throw new ApiException(400, "O membro já faz parte desta comissão");
+    if (!funcionario) {
+        throw new ApiException(404, "Funcionário não encontrado");
     }
 
     const comissao = await prisma.comissao.findUnique({
         where: { id: comissaoId }
-    })
+    });
 
     if (!comissao) {
-        throw new ApiException(404, "")
+        throw new ApiException(404, "Comissão não encontrada");
     }
 
     if (comissao.estado !== EstadoComissao.Aprovada) {
-        throw new ApiException(400, "O membro não pode fazer parte de uma comissão dispensada");
+        throw new ApiException(400, "Apenas comissões aprovadas podem ter novos membros");
     }
 
-    const addMembro = await prisma.comissaoFuncionario.create({
+    const comissaoMembroExistente = await prisma.comissaoFuncionario.findFirst({
+        where: {
+            comissaoId,
+            funcionarioId: funcionario.id
+        }
+    });
+
+    if (comissaoMembroExistente) {
+        throw new ApiException(400, "Este funcionário já faz parte da comissão");
+    }
+
+    if (dto.papel === 'Presidente') {
+        const presidenteExistente = await prisma.comissaoFuncionario.findFirst({
+            where: {
+                comissaoId,
+                papel: 'Presidente'
+            }
+        });
+
+        if (presidenteExistente) {
+            throw new ApiException(400, "Esta comissão já possui um presidente");
+        }
+    }
+
+    const novoMembro = await prisma.comissaoFuncionario.create({
         data: {
-            comissaoId: comissao.id,
+            comissaoId,
             funcionarioId: funcionario.id,
             papel: dto.papel
         }
     });
 
-    return addMembro;
+    return novoMembro;
 };

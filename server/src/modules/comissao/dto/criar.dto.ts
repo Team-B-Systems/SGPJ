@@ -1,11 +1,13 @@
 import { EstadoComissao, PapelComissaoFuncionario } from "@prisma/client";
 
-export interface comissaoDto{
+export interface comissaoDto {
     nome: string,
     dataCriacao: string,
     descricao: string,
     estado: EstadoComissao,
     dataEncerramento?: string,
-    funcionario: number
-    papel: PapelComissaoFuncionario
+    funcionarios: {
+        funcionarioId: number;
+        papel: PapelComissaoFuncionario;
+    }[]
 }

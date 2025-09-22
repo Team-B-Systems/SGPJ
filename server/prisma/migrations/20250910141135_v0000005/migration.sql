@@ -27,12 +27,12 @@ ALTER TABLE `Reuniao` DROP FOREIGN KEY `Reuniao_documentoId_fkey`;
 
 -- AlterTable
 ALTER TABLE `Comissao` DROP COLUMN `status`,
-    ADD COLUMN `estado` ENUM('Aprovada', 'Rejeitada', 'Dispensada') NOT NULL,
+    ADD COLUMN `estado` ENUM('Pendente','Aprovada', 'Rejeitada', 'Dispensada') NOT NULL,
     MODIFY `dataCriacao` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     MODIFY `dataEncerramento` DATETIME(3) NULL;
 
 -- AlterTable
-ALTER TABLE `ComissaoFuncionario` ADD COLUMN `papel` ENUM('Presidente', 'Membro', 'Secretario') NOT NULL;
+ALTER TABLE `ComissaoFuncionario` ADD COLUMN `papel` ENUM('Presidente', 'Membro') NOT NULL;
 
 -- AlterTable
 ALTER TABLE `Decisao` MODIFY `descricao` VARCHAR(1000) NOT NULL,

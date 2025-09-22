@@ -76,10 +76,11 @@ export interface Envolvido {
   };
 }
 
-interface Comissao {
+export interface Comissao {
   id: number;
   createdAt: string;
   updatedAt: string;
+  dataCriacao: string;
   nome: string;
   descricao: string;
   estado: string;
@@ -141,6 +142,18 @@ export interface ProcessoListResponse {
   totalPages: number;
 }
 
+export interface ComissaoCreate {
+  id?: number;
+  nome: string,
+  dataCriacao: string,
+  descricao: string,
+  estado: string,
+  dataEncerramento?: string
+  funcionarios: {
+    comissaoId?: number;
+    funcionarioId: number;
+    papel: string;
+  }[]
 export interface EventoSistema {
   id: number;
   createdAt: Date;
@@ -417,6 +430,38 @@ export async function downloadDocument(id: number): Promise<Blob> {
     responseType: "blob", // 👈 garante que vem como ficheiro binário
   });
 
+  return response.data;
+}
+
+//================ Comissao ==========
+export async function createComissao(data: 
+ ComissaoCreate
+): Promise<Comissao> {
+  const response = await api.post<Comissao>("/comissao/cadastrar", data);
+  return response.data;
+}
+
+export async function getComissoes(): Promise<Comissao[]> {
+  const response = await api.get<Comissao[]>("/comissao/visualizar");
+  return response.data;
+}
+
+export async function editComissao(
+  comissaoId: number,
+  data: Partial<ComissaoCreate>
+): Promise<Comissao> {
+  const response = await api.patch<Comissao>(`/comissao/editar/${comissaoId}`, data);
+  return response.data;
+}
+
+export async function addComissaoMembro(
+  comissaoId: number,
+  data: {
+    email: string;
+    papel: string;
+  }
+): Promise<Comissao> {
+  const response = await api.post<Comissao>(`/comissao/adicionar/${comissaoId}`, data);
   return response.data;
 }
 

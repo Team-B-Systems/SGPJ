@@ -6,28 +6,40 @@ import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/badge';
 import { useAuth } from '../../lib/auth-context';
-import { mockFuncionarios, type Comissao } from '../../lib/mock-data';
+import { mockFuncionarios as funcionarios, type Comissao } from '../../lib/mock-data';
 import { X, Plus, Users } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
+import { ComissaoCreate } from '../../lib/api';
+import { useFuncionarios } from '../../lib/funcionarios-context';
 
 interface ComissaoFormProps {
-  comissao?: Comissao | null;
-  onSubmit: (data: Omit<Comissao, 'id'>) => void;
+  comissao?: ComissaoCreate | null;
+  onSubmit: (data: ComissaoCreate, id?: number) => void;
   onCancel: () => void;
 }
 
+function formatDateForInput(dateString: string | null | undefined): string {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
+  return date.toISOString().split('T')[0];
+}
+
 export function ComissaoForm({ comissao, onSubmit, onCancel }: ComissaoFormProps) {
+  const { funcionarios: fetchFuncionarios, } = useFuncionarios();
   const { user } = useAuth();
-  const [formData, setFormData] = useState({
+
+  const [formData, setFormData] = useState<ComissaoCreate>({
     nome: '',
     descricao: '',
-    dataFormacao: '',
-    status: 'ativa' as const,
-    membros: [] as string[],
-    responsavel: '',
+    dataCriacao: '',
+    estado: 'Pendente',
+    dataEncerramento: '',
+    funcionarios: []
   });
 
-  const [selectedMember, setSelectedMember] = useState('');
+  const [responsavelId, setResponsavelId] = useState<string | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -35,118 +47,119 @@ export function ComissaoForm({ comissao, onSubmit, onCancel }: ComissaoFormProps
       setFormData({
         nome: comissao.nome,
         descricao: comissao.descricao,
-        dataFormacao: comissao.dataFormacao,
-        status: comissao.status,
-        membros: comissao.membros,
-        responsavel: comissao.responsavel,
+        dataCriacao: formatDateForInput(comissao.dataCriacao),
+        dataEncerramento: formatDateForInput(comissao.dataEncerramento),
+        estado: comissao.estado,
+        funcionarios: comissao.funcionarios.map(f => ({
+          funcionarioId: f.funcionarioId,
+          papel: f.papel,
+          comissaoId: f.comissaoId || 0
+        }))
       });
+
+      const responsavel = comissao.funcionarios.find(f => f.papel === 'Presidente');
+      if (responsavel) setResponsavelId(responsavel.funcionarioId.toString());
     } else {
-      // Set default values for new comissao
       const today = new Date().toISOString().split('T')[0];
-      setFormData(prev => ({
-        ...prev,
-        dataFormacao: today,
-        responsavel: user?.nome || '',
-        membros: user?.nome ? [user.nome] : [],
-      }));
+      setFormData(prev => ({ ...prev, dataCriacao: today }));
     }
   }, [comissao, user]);
 
   const addMember = () => {
-    if (selectedMember) {
-      const funcionario = mockFuncionarios.find(f => f.id === selectedMember);
-      if (funcionario && !formData.membros.includes(funcionario.nome)) {
-        setFormData({
-          ...formData,
-          membros: [...formData.membros, funcionario.nome]
-        });
-        setSelectedMember('');
+    if (selectedMemberId) {
+      const funcionarioId = parseInt(selectedMemberId, 10);
+      if (!formData.funcionarios.some(f => f.funcionarioId === funcionarioId)) {
+        setFormData(prev => ({
+          ...prev,
+          funcionarios: [...prev.funcionarios, { funcionarioId, papel: 'Membro', comissaoId: 0 }]
+        }));
+        setSelectedMemberId('');
       }
     }
   };
 
-  const removeMember = (memberName: string) => {
-    // Don't allow removing the responsible person
-    if (memberName === formData.responsavel) {
+  const removeMember = (funcionarioId: number) => {
+    if (responsavelId === funcionarioId.toString()) {
       setError('Não é possível remover o responsável da comissão');
       return;
     }
-    
-    setFormData({
-      ...formData,
-      membros: formData.membros.filter(m => m !== memberName)
-    });
+    setFormData(prev => ({
+      ...prev,
+      funcionarios: prev.funcionarios.filter(f => f.funcionarioId !== funcionarioId)
+    }));
     setError('');
   };
 
-  const handleResponsavelChange = (funcionarioId: string) => {
-    const funcionario = mockFuncionarios.find(f => f.id === funcionarioId);
-    if (funcionario) {
-      const newMembros = [...formData.membros];
-      
-      // Add the new responsible person to members if not already there
-      if (!newMembros.includes(funcionario.nome)) {
-        newMembros.push(funcionario.nome);
-      }
+  const handleResponsavelChange = (funcionarioIdStr: string) => {
+    const funcionarioId = parseInt(funcionarioIdStr, 10);
 
-      setFormData({
-        ...formData,
-        responsavel: funcionario.nome,
-        membros: newMembros
-      });
-      setError('');
+    if (!formData.funcionarios.some(f => f.funcionarioId === funcionarioId)) {
+      setFormData(prev => ({
+        ...prev,
+        funcionarios: [...prev.funcionarios, { funcionarioId, papel: 'Membro', comissaoId: 0 }]
+      }));
     }
+    setResponsavelId(funcionarioIdStr);
+    setError('');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (formData.membros.length === 0) {
+
+    if (formData.funcionarios.length === 0) {
       setError('A comissão deve ter pelo menos um membro');
       return;
     }
 
-    if (!formData.responsavel) {
-      setError('Selecione um responsável para a comissão');
+    if (!responsavelId) {
+      setError('Selecione um presidente para a comissão');
       return;
     }
 
-    if (!formData.membros.includes(formData.responsavel)) {
+    if (!formData.funcionarios.some(f => f.funcionarioId.toString() === responsavelId)) {
       setError('O responsável deve ser um membro da comissão');
       return;
     }
 
-    onSubmit(formData);
+    const dataToSend: ComissaoCreate = {
+      ...formData,
+      dataCriacao: new Date(formData.dataCriacao).toISOString(),
+      dataEncerramento: formData.dataEncerramento
+        ? new Date(formData.dataEncerramento).toISOString()
+        : '',
+      funcionarios: formData.funcionarios.map(f => ({
+        funcionarioId: f.funcionarioId,
+        papel: f.funcionarioId.toString() === responsavelId ? 'Presidente' : 'Membro',
+        comissaoId: 0
+      }))
+    };
+
+    onSubmit(dataToSend, comissao?.id);
   };
 
-  const availableFuncionarios = mockFuncionarios.filter(f => 
-    !formData.membros.includes(f.nome)
+  const availableFuncionarios = fetchFuncionarios.filter(
+    f => !formData.funcionarios.some(m => m.funcionarioId.toString() === f.id)
   );
 
   const tiposComissao = [
     'Comissão de Ética',
-    'Comissão de Compliance',
     'Comissão Disciplinar',
     'Comissão de Auditoria',
-    'Comissão de Qualidade',
-    'Comissão de Segurança',
-    'Comissão de Recursos Humanos',
-    'Comissão Técnica',
-    'Comissão Executiva',
-    'Outra'
   ];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Nome e Status */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="nome">Nome da Comissão *</Label>
-          <Select 
-            value={formData.nome} 
-            onValueChange={(value) => setFormData({ ...formData, nome: value })}
+          <Select
+            value={formData.nome}
+            onValueChange={(value: any) => setFormData(prev => ({ ...prev, nome: value }))}
+            disabled={!!comissao}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Selecione o tipo de comissão" />
+              <SelectValue placeholder="Selecione o nome da comissão" />
             </SelectTrigger>
             <SelectContent>
               {tiposComissao.map((tipo) => (
@@ -159,79 +172,92 @@ export function ComissaoForm({ comissao, onSubmit, onCancel }: ComissaoFormProps
           {formData.nome === 'Outra' && (
             <Input
               placeholder="Digite o nome da comissão"
-              value=""
-              onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+              value={formData.nome}
+              onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
               className="mt-2"
             />
           )}
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
-          <Select 
-            value={formData.status} 
-            onValueChange={(value: 'ativa' | 'inativa') => 
-              setFormData({ ...formData, status: value })
-            }
+          <Label htmlFor="estado">Estado</Label>
+          <Select
+            value={formData.estado}
+            onValueChange={(value: string) => setFormData(prev => ({ ...prev, estado: value }))}
+            disabled={!comissao}
           >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ativa">Ativa</SelectItem>
-              <SelectItem value="inativa">Inativa</SelectItem>
+              <SelectItem value="Pendente">Pendente</SelectItem>
+              <SelectItem value="Aprovada">Aprovada</SelectItem>
+              <SelectItem value="Rejeitada">Rejeitada</SelectItem>
+              <SelectItem value="Dispensada">Dispensada</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
+      {/* Descrição */}
       <div className="space-y-2">
         <Label htmlFor="descricao">Descrição *</Label>
         <Textarea
           id="descricao"
           value={formData.descricao}
-          onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+          onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
           placeholder="Descreva o propósito e objetivos da comissão"
           rows={3}
           required
         />
       </div>
 
+      {/* Datas */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="dataFormacao">Data de Formação *</Label>
+          <Label htmlFor="dataCriacao">Data de Criação *</Label>
           <Input
-            id="dataFormacao"
+            id="dataCriacao"
             type="date"
-            value={formData.dataFormacao}
-            onChange={(e) => setFormData({ ...formData, dataFormacao: e.target.value })}
+            value={formData.dataCriacao}
+            onChange={(e) => setFormData(prev => ({ ...prev, dataCriacao: e.target.value }))}
             required
+            readOnly
+            disabled={!comissao}
           />
         </div>
-
         <div className="space-y-2">
-          <Label htmlFor="responsavel">Responsável *</Label>
-          <Select 
-            value={mockFuncionarios.find(f => f.nome === formData.responsavel)?.id || ''} 
-            onValueChange={handleResponsavelChange}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o responsável" />
-            </SelectTrigger>
-            <SelectContent>
-              {mockFuncionarios
-                .filter(f => f.perfil === 'chefe' || f.perfil === 'administrador')
-                .map((funcionario) => (
-                  <SelectItem key={funcionario.id} value={funcionario.id}>
-                    {funcionario.nome} - {funcionario.cargo}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
+          <Label htmlFor="dataEncerramento">Data de Encerramento</Label>
+          <Input
+            id="dataEncerramento"
+            type="date"
+            value={formData.dataEncerramento || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, dataEncerramento: e.target.value }))}
+            disabled={!comissao}
+          />
         </div>
       </div>
 
-      {/* Members Section */}
+      {/* Responsável */}
+      <div className="space-y-2">
+        <Label htmlFor="presidente">Presidente *</Label>
+        <Select value={responsavelId || ''} onValueChange={handleResponsavelChange}  disabled={!!comissao} > 
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione o presidente" />
+          </SelectTrigger>
+          <SelectContent>
+            {fetchFuncionarios
+              .filter(f => f.role !== 'Admin')
+              .map((funcionario) => (
+                <SelectItem key={funcionario.id} value={funcionario.id?.toString()}>
+                  {funcionario.nome}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Membros */}
       <div className="space-y-4">
         <div>
           <Label>Membros da Comissão *</Label>
@@ -240,51 +266,51 @@ export function ComissaoForm({ comissao, onSubmit, onCancel }: ComissaoFormProps
           </p>
         </div>
 
-        {/* Add Member */}
         <div className="flex gap-2">
-          <Select 
-            value={selectedMember} 
-            onValueChange={setSelectedMember}
-          >
+          <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
             <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Selecione um funcionário" />
+              <SelectValue placeholder="Selecione um membro" />
             </SelectTrigger>
             <SelectContent>
               {availableFuncionarios.map((funcionario) => (
-                <SelectItem key={funcionario.id} value={funcionario.id}>
-                  {funcionario.nome} - {funcionario.cargo}
+                <SelectItem key={funcionario.id} value={funcionario.id?.toString()}>
+                  {funcionario.nome}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <Button type="button" onClick={addMember} disabled={!selectedMember}>
+          <Button type="button" onClick={addMember} disabled={!selectedMemberId}>
             <Plus className="w-4 h-4" />
           </Button>
         </div>
 
-        {/* Current Members */}
-        {formData.membros.length > 0 && (
+        {formData.funcionarios.length > 0 && (
           <div className="space-y-2">
             <Label className="text-sm">Membros Adicionados:</Label>
             <div className="flex flex-wrap gap-2">
-              {formData.membros.map((membro, index) => (
-                <Badge key={index} variant="secondary" className="pr-1">
-                  <Users className="w-3 h-3 mr-1" />
-                  {membro}
-                  {membro === formData.responsavel && (
-                    <span className="ml-1 text-xs text-blue-600">(Responsável)</span>
-                  )}
-                  {membro !== formData.responsavel && (
-                    <button
-                      type="button"
-                      onClick={() => removeMember(membro)}
-                      className="ml-2 hover:bg-gray-200 rounded-full p-0.5"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
-                </Badge>
-              ))}
+              {formData.funcionarios.map((f, index) => {
+                const membro = fetchFuncionarios.find(m => m.id?.toString() === f.funcionarioId.toString());
+                const nomeMembro = membro ? membro.nome : 'Desconhecido';
+                const isResponsavel = f.funcionarioId.toString() === responsavelId;
+                return (
+                  <Badge key={index} variant="secondary" className="pr-1">
+                    <Users className="w-3 h-3 mr-1" />
+                    {nomeMembro}
+                    {isResponsavel && (
+                      <span className="ml-1 text-xs text-blue-600">(Presidente)</span>
+                    )}
+                    {!isResponsavel && (
+                      <button
+                        type="button"
+                        onClick={() => removeMember(f.funcionarioId)}
+                        className="ml-2 hover:bg-gray-200 rounded-full p-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </Badge>
+                );
+              })}
             </div>
           </div>
         )}

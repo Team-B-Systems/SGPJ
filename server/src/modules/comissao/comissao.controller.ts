@@ -7,7 +7,7 @@ import { Role } from "@prisma/client";
 
 export const cadastrar = async (req: AuthRequest, res: Response) => {
     try {
-        if (!req.user || req.user.role !== Role.Chefe) {
+        if (!req.user || req.user.role !== Role.Funcionário) {
             return res.status(401).json({ error: "Não autorizado" })
         }
         const result = await comissaoService.criarComissao(req.body);
@@ -24,7 +24,7 @@ export const cadastrar = async (req: AuthRequest, res: Response) => {
 
 export const editar = async (req: AuthRequest, res: Response) => {
     try {
-        if (!req.user || req.user.role !== Role.Chefe) {
+        if (!req.user || req.user.role !== Role.Funcionário) {
             return res.status(401).json({ error: "Não autorizado" })
         }
 
@@ -44,7 +44,7 @@ export const editar = async (req: AuthRequest, res: Response) => {
 
 export const visualizar = async (req: AuthRequest, res: Response) => {
     try {
-        if (!req.user) {
+        if (!req.user || req.user.role !== Role.Funcionário) {
             return res.status(401).json({ error: "Não autorizado" })
         }
         const result = await comissaoService.visualizar();
@@ -61,7 +61,7 @@ export const visualizar = async (req: AuthRequest, res: Response) => {
 
 export const pesquisar = async (req: AuthRequest, res: Response) => {
     try {
-        if (!req.user || req.user.role !== Role.Chefe) {
+        if (!req.user || req.user.role !== Role.Funcionário ||  req.user.role !== Role.Chefe) {
             return res.status(401).json({ error: "Não autorizado" })
         }
         const id = parseInt(req.params.id, 10)
@@ -79,7 +79,7 @@ export const pesquisar = async (req: AuthRequest, res: Response) => {
 
 export const adicionarMembro = async (req: AuthRequest, res: Response) => {
     try {
-        if (!req.user || req.user.role !== Role.Chefe) {
+        if (!req.user || req.user.role !== Role.Funcionário) {
             return res.status(401).json({ error: "Não autorizado" })
         }
 

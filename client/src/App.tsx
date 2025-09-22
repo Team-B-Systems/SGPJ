@@ -21,6 +21,7 @@ import { EventosSistemaPage } from "./components/events/eventos-sistema-page";
 import { FuncionariosProvider } from "./lib/funcionarios-context";
 import { ProcessosProvider } from "./lib/processos-context";
 import { QueixaProvider } from "./lib/queixa-context";
+import { ComissaoProvider } from "./lib/comissao-context";
 
 function PrivateRoutes() {
   const { isAuthenticated, loading, user } = useAuth();
@@ -83,7 +84,9 @@ export default function App() {
       <FuncionariosProvider>
         <ProcessosProvider>
           <QueixaProvider>
-            <AppContent />
+           <ComissaoProvider>
+             <AppContent />
+           </ComissaoProvider>
           </QueixaProvider>
         </ProcessosProvider>
       </FuncionariosProvider>

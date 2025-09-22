@@ -172,7 +172,7 @@ async function main() {
       funcionarios: {
         create: [
           { funcionarioId: ana.id, papel: 'Presidente' },
-          { funcionarioId: carlos.id, papel: 'Secretario' },
+          { funcionarioId: carlos.id, papel: 'Membro' },
         ],
       },
     },
