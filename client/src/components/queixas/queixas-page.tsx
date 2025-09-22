@@ -16,13 +16,13 @@ import {
   Download,
 } from 'lucide-react';
 import { QueixaForm } from './queixa-form';
-import { Queixa} from '../../lib/api';
+import { Queixa } from '../../lib/api';
 import { useQueixa } from '../../lib/queixa-context';
 import { useProcessos } from '../../lib/processos-context';
 
 export function QueixasPage() {
   const { queixas, fetchQueixas, addQueixa, updateQueixa, baixarDocumento } = useQueixa();
-  const { fetchProcessos} = useProcessos();
+  const { fetchProcessos } = useProcessos();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedQueixa, setSelectedQueixa] = useState<Queixa | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -32,10 +32,6 @@ export function QueixasPage() {
     fetchQueixas();
   }, [fetchQueixas]);
 
-  useEffect(() => {
-    fetchProcessos();
-  }, [fetchProcessos]);
-
   const filteredQueixas = useMemo(() => {
     return queixas.filter((q) =>
       q.descricao.toLowerCase().includes(searchTerm.toLowerCase())
@@ -44,11 +40,11 @@ export function QueixasPage() {
 
   const handleCreateQueixa = async (data: Queixa) => {
     const queixa: Queixa = {
-      id: data.id, 
+      id: data.id,
       descricao: data.descricao,
       estado: data.estado,
       dataEntrada: new Date(data.dataEntrada).toISOString(),
-      ficheiro: data.ficheiro, 
+      ficheiro: data.ficheiro,
       pPassivaId: data.pPassivaId,
       funcionarioId: data.funcionarioId,
     };
@@ -61,7 +57,8 @@ export function QueixasPage() {
 
     await updateQueixa(editingQueixa.id?.toString(), {
       ...data,
-    id: editingQueixa.id,});
+      id: editingQueixa.id,
+    });
     setEditingQueixa(null);
     setShowForm(false);
   };
@@ -135,10 +132,10 @@ export function QueixasPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
           { title: 'Total', value: stats.total, icon: <AlertTriangle className="h-4 w-4 text-muted-foreground" /> },
-           { title: 'Pendentes', value: stats.pendente, icon: <AlertTriangle className="h-4 w-4 text-red-500" /> },
+          { title: 'Pendentes', value: stats.pendente, icon: <AlertTriangle className="h-4 w-4 text-red-500" /> },
           { title: 'Em Análise', value: stats.emAnalise, icon: <Clock className="h-4 w-4 text-yellow-500" /> },
           { title: 'Aceites', value: stats.aceite, icon: <CheckCircle className="h-4 w-4 text-green-500" /> },
-           { title: 'Rejeitadas', value: stats.rejeitada, icon: <AlertTriangle className="h-4 w-4 text-red-500" /> },
+          { title: 'Rejeitadas', value: stats.rejeitada, icon: <AlertTriangle className="h-4 w-4 text-red-500" /> },
         ].map((s) => (
           <Card key={s.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -234,24 +231,28 @@ export function QueixasPage() {
                                 <h2 className="text-lg font-semibold">Descrição</h2>
                                 <p>{selectedQueixa.descricao}</p>
                                 <h2 className="text-lg font-semibold">Data de Abertura</h2>
-                                 {new Date(selectedQueixa.dataEntrada).toLocaleDateString("pt-PT")}
+                                {new Date(selectedQueixa.dataEntrada).toLocaleDateString("pt-PT")}
                                 <h2 className="text-lg font-semibold">Estado</h2>
                                 <p>{selectedQueixa.estado}</p>
-                                
+
                               </div>
                             )}
                           </DialogContent>
                         </Dialog>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setEditingQueixa(q);
-                            setShowForm(true);
-                          }}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
+                        {
+                          q.estado !== 'Aceite' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingQueixa(q);
+                                setShowForm(true);
+                              }}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                          )
+                        }
                         <Button
                           variant="ghost"
                           size="sm"

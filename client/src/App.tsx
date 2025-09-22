@@ -17,12 +17,13 @@ import { QueixasPage } from "./components/queixas/queixas-page";
 import { ReunioesPage } from "./components/reunioes/reunioes-page";
 import { ComissoesPage } from "./components/comissoes/comissoes-page";
 import { EnvolvidosPage } from "./components/envolvidos/envolvidos-page";
+import { EventosSistemaPage } from "./components/events/eventos-sistema-page";
 import { FuncionariosProvider } from "./lib/funcionarios-context";
 import { ProcessosProvider } from "./lib/processos-context";
 import { QueixaProvider } from "./lib/queixa-context";
 
 function PrivateRoutes() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
 
   if (loading) {
     return <div>Carregando...</div>; // ou spinner
@@ -30,6 +31,17 @@ function PrivateRoutes() {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (isAuthenticated && user?.estado !== 'Ativo') {
+    return (
+      <DashboardLayout>
+        <Routes>
+          <Route path="/perfil" element={<PerfilPage />} />
+          <Route path="*" element={<Navigate to="/perfil" replace />} />
+        </Routes>
+      </DashboardLayout>
+    )
   }
 
   return (
@@ -44,6 +56,7 @@ function PrivateRoutes() {
         <Route path="/reunioes" element={<ReunioesPage />} />
         <Route path="/comissoes" element={<ComissoesPage />} />
         <Route path="/envolvidos" element={<EnvolvidosPage />} />
+        <Route path="/eventos-sistema" element={<EventosSistemaPage />} />
         {/* rota fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -52,6 +65,8 @@ function PrivateRoutes() {
 }
 
 function AppContent() {
+  const { user } = useAuth();
+
   return (
     <Router>
       <Routes>

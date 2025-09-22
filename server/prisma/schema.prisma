@@ -132,6 +132,7 @@ model Funcionario {
   partePassiva        FuncionarioPartePassiva[]
   processos           ProcessoJuridico[] // Apenas para funcionários do departamento Jurídico
   envolvido           Envolvido?
+  twoFactorSecret     String?
 
   EventoSistema EventoSistema[]
 }

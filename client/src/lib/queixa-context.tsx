@@ -8,7 +8,7 @@ interface QueixaContextType {
   fetchQueixas: () => Promise<void>;
   addQueixa: (queixa: Queixa) => void;
   searchQueixa: (params: { email: string }) => Promise<void>;
-  updateQueixa: (id: string, data: Partial<Queixa>) => Promise<void>;
+  updateQueixa: (id: string, data: Partial<Queixa | any>) => Promise<void>;
   baixarDocumento: (id: number) => Promise<void>;
 }
 

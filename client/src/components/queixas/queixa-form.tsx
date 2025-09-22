@@ -20,19 +20,16 @@ interface QueixaFormProps {
   isEdit?: boolean;
   partesPassivas: { id: number; nome: string }[];
   departamentos: { id: number; nome: string }[];
-  processos?: { id: number; titulo: string }[];
-  onSubmit: (data: Queixa) => void;
+  onSubmit: (data: Queixa | any) => void;
   onCancel: () => void;
 }
 
-export function QueixaForm({ isEdit = false,
+export function QueixaForm({
   queixa,
-  processos = [],
   onSubmit,
   onCancel,
 }: QueixaFormProps) {
   const { funcionarios, fetchFuncionarios } = useFuncionarios();
-  const { fetchProcessos } = useProcessos();
 
   useEffect(() => {
     if (!funcionarios.length) {
@@ -40,23 +37,19 @@ export function QueixaForm({ isEdit = false,
     }
   }, [funcionarios.length, fetchFuncionarios]);
 
-  useEffect(() => {
-    if (!processos.length) {
-      fetchProcessos();
-    }
-  }, [processos.length,fetchProcessos]);
-
   const [formData, setFormData] = useState({
     autorId: "",
     partePassivaId: "",
     departamentoAutor: "",
     departamentoPassivo: "",
-    dataEntrada: "",
+    assuntoProcesso: "",
+    dataEntrada: (new Date()).toISOString().split("T")[0],
     descricao: "",
     estado: "Pendente",        // valor default do enum
     ficheiro: undefined as File | undefined,
-    processoId: "",
   });
+
+  const isEdit = !!queixa;
 
   useEffect(() => {
     if (queixa && funcionarios) {
@@ -69,10 +62,10 @@ export function QueixaForm({ isEdit = false,
         partePassivaId: queixa.pPassivaId.toString(),
         departamentoPassivo: passiva?.departamento ?? "",
         dataEntrada: queixa.dataEntrada.split("T")[0],
+        assuntoProcesso: queixa.assuntoProcesso ?? "",
         descricao: queixa.descricao,
         estado: queixa.estado ?? "Pendente",
         ficheiro: undefined,
-        processoId: queixa.processoId?.toString() ?? "",
       });
     } else {
       const today = new Date().toISOString().split("T")[0];
@@ -83,12 +76,12 @@ export function QueixaForm({ isEdit = false,
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    const data: Queixa = {
+    const data = {
       dataEntrada: formData.dataEntrada,
       descricao: formData.descricao,
       estado: formData.estado,
+      assuntoProcesso: formData.assuntoProcesso || undefined,
       ficheiro: formData.ficheiro || null,
-      processoId: formData.processoId ? Number(formData.processoId) : undefined,
       funcionarioId: Number(formData.autorId),
       pPassivaId: Number(formData.partePassivaId),
     };
@@ -121,8 +114,8 @@ export function QueixaForm({ isEdit = false,
             onChange={(e) =>
               setFormData({ ...formData, dataEntrada: e.target.value })
             }
-             readOnly={!!queixa}
-            required
+            readOnly={!!queixa}
+            disabled
           />
         </div>
 
@@ -154,7 +147,21 @@ export function QueixaForm({ isEdit = false,
             />
           )}
         </div>
+
       </div>
+        {formData.estado === "Aceite" && (
+          <div className="space-y-2">
+            <Label htmlFor="assuntoProcesso">Assunto do Processo *</Label>
+            <Input
+              id="assuntoProcesso"
+              type="text"
+              onChange={(e) =>
+                setFormData({ ...formData, assuntoProcesso: e.target.value })
+              }
+              required
+            />
+          </div>
+        )}
 
       <div className="grid md:grid-cols-2 gap-4">
         {/* === AUTOR === */}
@@ -258,24 +265,14 @@ export function QueixaForm({ isEdit = false,
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="processoId">Processo (opcional)</Label>
-        <Select
-          value={formData.processoId}
-          onValueChange={(v: any) =>
-            setFormData({ ...formData, processoId: v })
+        <Label htmlFor="assuntoProcesso">Assunto do Processo</Label>
+        <Input
+          id="assuntoProcesso"
+          type="text"
+          onChange={(e) =>
+            setFormData({ ...formData, ficheiro: e.target.files?.[0] })
           }
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Selecione um processo" />
-          </SelectTrigger>
-          <SelectContent>
-            {processos.map((p) => (
-              <SelectItem key={p.id} value={p.id.toString()}>
-                {p.titulo}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        />
       </div>
 
       <div className="space-y-2">

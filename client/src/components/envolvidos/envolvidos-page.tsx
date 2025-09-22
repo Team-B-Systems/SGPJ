@@ -307,14 +307,6 @@ export function EnvolvidosPage() {
 
                         {canEdit && (
                           <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditEnvolvido(envolvido)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="sm">

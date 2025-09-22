@@ -11,6 +11,7 @@ import comissaoRouter from "./modules/comissao/comissao.routes";
 import reuniaoRouter from "./modules/reuniao/reuniao.routes";
 import parteenvolvido from "./modules/parteenvolvido/parteenvolvido.routes";
 import pPassivaRouter from "./modules/partepassiva/partepassiva.routes";
+import eventRouter from "./modules/events/event.routes";
 
 
 const PORT = process.env.PORT || 3000;
@@ -77,6 +78,9 @@ app.use("/partepassiva", pPassivaRouter)
 
 expressListRoutes(pPassivaRouter, { prefix: "/partepassiva", forceUnixPathStyle: true });
 
+app.use("/events", eventRouter)
+
+expressListRoutes(eventRouter, { prefix: "/events", forceUnixPathStyle: true });
 
 app.listen(PORT, () => {
   console.log(`\nApp executando na porta ${PORT} 🚀🆗✅`)

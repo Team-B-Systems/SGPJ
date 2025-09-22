@@ -13,7 +13,10 @@ export const getProfile = async (id: number) => {
 
     const { senha, ...sanitizedUser } = user;
 
-    return sanitizedUser;
+    return {
+        ...sanitizedUser,
+        twoFactorSecret: user.twoFactorSecret ? true : false,
+    };
 }
 
 export const editProfile = async (id: number, dto: EditDTO) => {

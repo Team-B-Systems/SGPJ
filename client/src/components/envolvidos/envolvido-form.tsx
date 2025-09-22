@@ -24,7 +24,7 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
   const { processos } = useProcessos();
 
   const [formData, setFormData] = useState({
-    processoId: processoId || -1,
+    processoId: processoId?.toString() || processos[0]?.id.toString() || '',
     funcionarioId: '',
     nome: '',
     numeroIdentificacao: '',
@@ -39,7 +39,7 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
   useEffect(() => {
     if (envolvido) {
       setFormData({
-        processoId: processoId || -1,
+        processoId: processoId?.toString() || '',
         funcionarioId: envolvido.envolvido.funcionarioId?.toString() || '',
         nome: envolvido.envolvido.nome,
         numeroIdentificacao: envolvido.envolvido.numeroIdentificacao,
@@ -48,7 +48,7 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
       });
     } else {
       setFormData({
-        processoId: processoId || -1,
+        processoId: processoId?.toString() || '',
         funcionarioId: '',
         nome: '',
         numeroIdentificacao: '',
@@ -61,7 +61,7 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
 
   // Atualiza papéis disponíveis de acordo com o tipo do processo
   useEffect(() => {
-    const processo = processos.find(p => p.id === formData.processoId);
+    const processo = processos.find(p => p.id.toString() === formData.processoId);
     if (processo) {
       setPapeisNoProcesso(papeisPorTipo[processo.tipoProcesso as TipoDeProcesso] || []);
     } else {
@@ -71,7 +71,7 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!formData.processoId || formData.processoId === -1) newErrors.processoId = 'Processo é obrigatório';
+    if (!formData.processoId || formData.processoId === '') newErrors.processoId = 'Processo é obrigatório';
     if (!formData.nome.trim()) newErrors.nome = 'Nome é obrigatório';
     if (!formData.numeroIdentificacao.trim()) newErrors.numeroIdentificacao = 'Número de identificação é obrigatório';
     if (!formData.papelNoProcesso.trim()) newErrors.papelNoProcesso = 'Papel no processo é obrigatório';
@@ -80,10 +80,11 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
   };
 
   const handleSubmit = (e: React.FormEvent) => {
+    console.log(formData)
     e.preventDefault();
     if (!validateForm()) return;
 
-    const findProcessoId = processos.find(p => p.id === formData.processoId)?.id;
+    const findProcessoId = processos.find(p => p.id.toString() === formData.processoId)?.id;
 
     onSubmit({
       createdAt: envolvido ? envolvido.createdAt : new Date().toISOString(),
@@ -130,7 +131,7 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
             {isReadOnly
               ? 'Visualizar Envolvido'
               : envolvido
-                ? 'Editar Envolvido'
+                ? 'Visualizar Envolvido'
                 : 'Adicionar Envolvido'
             }
           </DialogTitle>
@@ -151,7 +152,7 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
               </SelectTrigger>
               <SelectContent>
                 {processos.filter(p => p.estado !== 'Arquivado').map(p => (
-                  <SelectItem key={p.id} value={p.id}>{p.numeroProcesso} - {p.assunto}</SelectItem>
+                  <SelectItem key={p.id} value={p.id.toString()}>{p.numeroProcesso} - {p.assunto}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -164,14 +165,14 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
             <Select
               value={formData.funcionarioId}
               onValueChange={handleFuncionarioSelect}
-              disabled={isReadOnly}
+              disabled={isReadOnly || envolvido !== undefined}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um funcionário" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Nenhum">Nenhum</SelectItem>
-                {funcionarios.map(f => (
+                {funcionarios.filter(f => f.id !== user?.id).map(f => (
                   <SelectItem key={f.id} value={f.id?.toString()}>
                     {f.nome} ({f.numeroIdentificacao})
                   </SelectItem>
@@ -186,7 +187,7 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
             <Select
               value={formData.papelNoProcesso}
               onValueChange={(value: string) => setFormData({ ...formData, papelNoProcesso: value })}
-              disabled={isReadOnly}
+              disabled={isReadOnly || envolvido !== undefined || papeisNoProcesso.length === 0}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o papel no processo" />
@@ -208,7 +209,7 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
               value={formData.nome}
               onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
               placeholder="Nome completo"
-              disabled={isReadOnly || formData.isFuncionario}
+              disabled={isReadOnly || envolvido !== undefined || formData.isFuncionario}
             />
             {errors.nome && <p className="text-destructive mt-1">{errors.nome}</p>}
           </div>
@@ -221,16 +222,16 @@ export function EnvolvidoForm({ isOpen, onClose, onSubmit, envolvido, processoId
               value={formData.numeroIdentificacao}
               onChange={(e) => setFormData({ ...formData, numeroIdentificacao: e.target.value })}
               placeholder="Número Identificação"
-              disabled={isReadOnly || formData.isFuncionario}
+              disabled={isReadOnly || envolvido !== undefined || formData.isFuncionario}
             />
             {errors.numeroIdentificacao && <p className="text-destructive mt-1">{errors.numeroIdentificacao}</p>}
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose}>
-              {isReadOnly ? 'Fechar' : 'Cancelar'}
+              {(isReadOnly || envolvido !== undefined) ? 'Fechar' : 'Cancelar'}
             </Button>
-            {!isReadOnly && (
+            {!(isReadOnly || envolvido !== undefined) && (
               <Button type="submit">{envolvido ? 'Atualizar' : 'Adicionar'}</Button>
             )}
           </div>
