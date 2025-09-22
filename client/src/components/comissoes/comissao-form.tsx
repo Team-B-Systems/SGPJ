@@ -11,6 +11,7 @@ import { X, Plus, Users } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
 import { ComissaoCreate } from '../../lib/api';
 import { useFuncionarios } from '../../lib/funcionarios-context';
+import { useProcessos } from '../../lib/processos-context';
 
 interface ComissaoFormProps {
   comissao?: ComissaoCreate | null;
@@ -27,6 +28,7 @@ function formatDateForInput(dateString: string | null | undefined): string {
 
 export function ComissaoForm({ comissao, onSubmit, onCancel }: ComissaoFormProps) {
   const { funcionarios: fetchFuncionarios, } = useFuncionarios();
+  const { processos } = useProcessos();
   const { user } = useAuth();
 
   const [formData, setFormData] = useState<ComissaoCreate>({
@@ -35,11 +37,13 @@ export function ComissaoForm({ comissao, onSubmit, onCancel }: ComissaoFormProps
     dataCriacao: '',
     estado: 'Pendente',
     dataEncerramento: '',
+    processoId: processos[0]?.id || -1,
     funcionarios: []
   });
 
   const [responsavelId, setResponsavelId] = useState<string | null>(null);
   const [selectedMemberId, setSelectedMemberId] = useState('');
+  const [selectedProcessId, setSelectedProcessId] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -50,6 +54,7 @@ export function ComissaoForm({ comissao, onSubmit, onCancel }: ComissaoFormProps
         dataCriacao: formatDateForInput(comissao.dataCriacao),
         dataEncerramento: formatDateForInput(comissao.dataEncerramento),
         estado: comissao.estado,
+        processoId: comissao.processoId,
         funcionarios: comissao.funcionarios.map(f => ({
           funcionarioId: f.funcionarioId,
           papel: f.papel,
@@ -104,6 +109,7 @@ export function ComissaoForm({ comissao, onSubmit, onCancel }: ComissaoFormProps
   };
 
   const handleSubmit = (e: React.FormEvent) => {
+    console.log({...formData})
     e.preventDefault();
 
     if (formData.funcionarios.length === 0) {
@@ -123,6 +129,7 @@ export function ComissaoForm({ comissao, onSubmit, onCancel }: ComissaoFormProps
 
     const dataToSend: ComissaoCreate = {
       ...formData,
+      processoId: formData?.processoId || -1,
       dataCriacao: new Date(formData.dataCriacao).toISOString(),
       dataEncerramento: formData.dataEncerramento
         ? new Date(formData.dataEncerramento).toISOString()
@@ -241,7 +248,7 @@ export function ComissaoForm({ comissao, onSubmit, onCancel }: ComissaoFormProps
       {/* Responsável */}
       <div className="space-y-2">
         <Label htmlFor="presidente">Presidente *</Label>
-        <Select value={responsavelId || ''} onValueChange={handleResponsavelChange}  disabled={!!comissao} > 
+        <Select value={responsavelId || ''} onValueChange={handleResponsavelChange} disabled={!!comissao} >
           <SelectTrigger>
             <SelectValue placeholder="Selecione o presidente" />
           </SelectTrigger>
@@ -312,6 +319,34 @@ export function ComissaoForm({ comissao, onSubmit, onCancel }: ComissaoFormProps
                 );
               })}
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Processos */}
+      <div className="space-y-4">
+        <div>
+          <Label>Processo que a comissão fará parte*</Label>
+          <p className="text-sm text-muted-foreground">
+            Adicione processo que a comissão fará parte
+          </p>
+        </div>
+
+        {processos.length > 0 && (
+          <div>
+            <Select
+              value={formData.processoId}
+              onValueChange={(value: any) => setFormData({ ...formData, processoId: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um processo" />
+              </SelectTrigger>
+              <SelectContent>
+                {processos.filter(p => p.estado !== 'Arquivado').map(p => (
+                  <SelectItem key={p.id} value={p.id}>{p.numeroProcesso} - {p.assunto}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
       </div>

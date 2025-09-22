@@ -94,6 +94,10 @@ export interface Comissao {
     papel: string;
     funcionario: User;
   }[];
+  processos:{
+    numeroProcesso: string,
+    assunto: string
+  }[]
 }
 
 export interface Reuniao {
@@ -148,6 +152,7 @@ export interface ComissaoCreate {
   dataCriacao: string,
   descricao: string,
   estado: string,
+  processoId?: number,
   dataEncerramento?: string
   funcionarios: {
     comissaoId?: number;

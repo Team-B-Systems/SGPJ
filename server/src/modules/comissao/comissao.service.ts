@@ -25,6 +25,15 @@ export const criarComissao = async (dto: comissaoDto) => {
         })
     ));
 
+    const updateProcess = await prisma.processoJuridico.update({
+        where: { id: dto.processoId },
+        data: { comissaoId: newComissao.id }
+    });
+
+    if (!updateProcess) {
+        throw new ApiException(404, "Processo não encontrado");
+    }
+
     const { ...sanitizedComissao } = newComissao
     return sanitizedComissao
 };
@@ -96,8 +105,13 @@ export const editar = async (comissaoId: number, dto: comissaoDto) => {
 export const visualizar = async () => {
     const comissoes = await prisma.comissao.findMany({
         include: {
-            funcionarios: true,
-        },
+            processos: true,
+            funcionarios: {
+                include: {
+                    funcionario: true
+                }
+            }
+        }
     });
 
     if (!comissoes) {

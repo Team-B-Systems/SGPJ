@@ -6,6 +6,7 @@ export interface comissaoDto {
     descricao: string,
     estado: EstadoComissao,
     dataEncerramento?: string,
+    processoId?: number,
     funcionarios: {
         funcionarioId: number;
         papel: PapelComissaoFuncionario;

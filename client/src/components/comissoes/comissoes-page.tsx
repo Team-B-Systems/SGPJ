@@ -20,13 +20,9 @@ import {
 } from 'lucide-react';
 import { useFuncionarios } from '../../lib/funcionarios-context';
 import { useComissao } from '../../lib/comissao-context';
-import { type ComissaoCreate, type User, addComissaoMembro, createComissao, editComissao } from '../../lib/api';
+import { Comissao, type ComissaoCreate, type User, addComissaoMembro, createComissao, editComissao } from '../../lib/api';
 import { ComissaoForm } from './comissao-form';
 
-// Tipo com id (para listar)
-interface Comissao extends ComissaoCreate {
-  id: number;
-}
 
 export function ComissoesPage() {
   const { funcionarios, fetchFuncionarios } = useFuncionarios();
@@ -57,16 +53,26 @@ export function ComissoesPage() {
     fetchComissoes()
   }, []);
 
-  const handleCreateComissao = (comissaoData: ComissaoCreate) => {
-    createComissao(comissaoData);
-    setShowForm(false);
+  const handleCreateComissao = async (comissaoData: ComissaoCreate) => {
+    try {
+      await createComissao(comissaoData);   // cria no backend
+      await fetchComissoes();               // recarrega a lista
+      setShowForm(false);
+    } catch (error) {
+      console.error("Erro ao criar comissão:", error);
+    }
   };
 
-  const handleEditComissao = (comissaoData: ComissaoCreate, id?: number) => {
+  const handleEditComissao = async (comissaoData: ComissaoCreate, id?: number) => {
     if (id) {
-      editComissao(id, comissaoData);
-      setEditingComissao(null);
-      setShowForm(false);
+      try {
+        await editComissao(id, comissaoData);
+        await fetchComissoes();
+        setEditingComissao(null);
+        setShowForm(false);
+      } catch (error) {
+        console.error("Erro ao editar comissão:", error);
+      }
     }
   };
 
@@ -75,7 +81,6 @@ export function ComissoesPage() {
   };
 
   const handleAddMember = (comissaoData: ComissaoCreate) => {
-    console.log('ADD MEMBRO');
     if (selectedMemberComissao && selectedMember) {
       const funcionario = funcionarios.find((f: User) => f.id?.toString() === selectedMember.toString());
       if (funcionario) {
@@ -285,34 +290,11 @@ export function ComissoesPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex -space-x-2">
-                        {comissao.funcionarios.map((membro) => (
-                          <Avatar
-                            key={membro.id}
-                            className="h-6 w-6 border-2 border-background"
-                          >
-                            <AvatarFallback className="text-xs">
-                              {getInitials(membro.funcionario?.nome || "")}
-                            </AvatarFallback>
-                          </Avatar>
-                        ))}
+                        {comissao.funcionarios.find((fc) => fc.papel === "Presidente")?.funcionario.nome ?? 'Sem coordenador'}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div className="flex -space-x-2">
-                          {comissao.funcionarios.slice(0, 3).map((membro, index) => (
-                            <Avatar key={index} className="h-6 w-6 border-2 border-background">
-                              <AvatarFallback className="text-xs">
-                                {getInitials(membro.funcionario?.nome)}
-                              </AvatarFallback>
-                            </Avatar>
-                          ))}
-                          {comissao.funcionarios.length > 3 && (
-                            <div className="h-6 w-6 rounded-full bg-muted border-2 border-background flex items-center justify-center">
-                              <span className="text-xs">+{comissao.funcionarios.length - 3}</span>
-                            </div>
-                          )}
-                        </div>
                         <span className="text-sm text-muted-foreground">
                           {comissao.funcionarios.length} membro{comissao.funcionarios.length !== 1 ? 's' : ''}
                         </span>
@@ -401,27 +383,11 @@ export function ComissoesPage() {
                                         className="flex items-center justify-between p-2 border rounded-lg"
                                       >
                                         <div className="flex items-center gap-2">
-                                          <Avatar className="h-8 w-8">
-                                            <AvatarFallback className="text-xs">
-                                              {getInitials(
-                                                funcionarios.find(
-                                                  (f) => f.id === membro.funcionarioId.toString()
-                                                )?.nome || ""
-                                              )}
-                                            </AvatarFallback>
-                                          </Avatar>
-
-                                          <span className="text-sm">
-                                            {
-                                              funcionarios.find(
-                                                (f) => f.id === membro.funcionarioId.toString()
-                                              )?.nome
-                                            }
-                                          </span>
+                                          {membro.funcionario.nome}
 
                                           {membro.papel === "Presidente" && (
                                             <Badge variant="outline" className="text-xs">
-                                              Responsável
+                                              Presidente
                                             </Badge>
                                           )}
                                         </div>

@@ -159,6 +159,8 @@ model ProcessoJuridico {
   dataEncerramento DateTime?
   queixaId         Int?                        @unique
   queixa           Queixa?                     @relation(fields: [queixaId], references: [id])
+  comissaoId       Int?                        @unique
+  comissao         Comissao?                   @relation(fields: [comissaoId], references: [id])
   documentos       Documento[]
   reunioes         Reuniao[]
   parecer          Parecer?
@@ -252,6 +254,7 @@ model Comissao {
   descricao        String
   estado           EstadoComissao
   dataEncerramento DateTime?
+  processos        ProcessoJuridico[]
   funcionarios     ComissaoFuncionario[]
   reunioes         Reuniao[]
 }
