@@ -162,6 +162,8 @@ export const generate2FASecret = async (userId: number) => {
     descricao: `Secret 2FA gerado para o funcionário ID ${userId}`,
   });
 
+  console.log({ qrCodeUrl, secret: secret.base32 })
+
   return { qrCodeUrl, secret: secret.base32 };
 };
 

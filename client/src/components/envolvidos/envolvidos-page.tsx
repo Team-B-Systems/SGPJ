@@ -305,7 +305,7 @@ export function EnvolvidosPage() {
                           <Eye className="h-4 w-4" />
                         </Button>
 
-                        {canEdit && (
+                        {(canEdit && processos.find(p => p.id.toString() === envolvido.processoJuridicoId.toString())?.estado !== 'Arquivado') && (
                           <>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>

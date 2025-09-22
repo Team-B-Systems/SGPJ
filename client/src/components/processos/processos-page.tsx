@@ -36,6 +36,8 @@ import { ProcessForm } from "./process-form";
 import { ProcessDetails } from "./process-details";
 import { useProcessos } from "../../lib/processos-context";
 import { editProcess, Processo, registerProcess } from "../../lib/api";
+import { Documento, attachDocument } from '../../lib/api';
+import { ArchiveProcessForm } from "./archive-process-form";
 
 export function ProcessosPage() {
   const { processos, loading, total, fetchProcessos } = useProcessos();
@@ -44,6 +46,8 @@ export function ProcessosPage() {
   const [selectedProcess, setSelectedProcess] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingProcess, setEditingProcess] = useState<Processo | null>(null);
+  const [showArchiveForm, setShowArchiveForm] = useState(false);
+  const [archivingProcess, setArchivingProcess] = useState<Processo | null>(null);
 
   const filteredProcessos = processos.filter(
     (processo) =>
@@ -79,6 +83,35 @@ export function ProcessosPage() {
       console.error("Erro ao criar processo:", error);
     } finally {
       setShowForm(false);
+    }
+  };
+
+  const handleArchiveProcess = async (archiveData: {
+    decisaoDiretora: string;
+    motivoArquivamento: string;
+    ficheiro: File;
+    observacoes: string;
+    dataDecisao: string;
+    numeroDespacho?: string;
+  }) => {
+    if (!archivingProcess) {
+      return;
+    }
+
+    try {
+      await attachDocument({
+        titulo: `Decisão-${archivingProcess?.numeroProcesso}`,
+        descricao: `${archiveData.motivoArquivamento}\n${archiveData.decisaoDiretora}`,
+        tipoDocumento: "Decisão",
+        ficheiro: archiveData.ficheiro,
+        processoId: archivingProcess?.id,
+      });
+      await fetchProcessos();
+      setShowArchiveForm(false);
+    } catch (error) {
+      console.error("Erro ao arquivar processo:", error);
+    } finally {
+      setArchivingProcess(null);
     }
   };
 
@@ -215,23 +248,31 @@ export function ProcessosPage() {
                           </DialogContent>
                         </Dialog>
 
-                        {/* Editar */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setEditingProcess(processo);
-                            setShowForm(true);
-                          }}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-
                         {/* Arquivar */}
-                        {processo.estado !== "Encerrado" && (
-                          <Button variant="ghost" size="sm">
-                            <Archive className="w-4 h-4" />
-                          </Button>
+                        {processo.estado !== "Arquivado" && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingProcess(processo);
+                                setShowForm(true);
+                              }}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setArchivingProcess(processo);
+                                setShowArchiveForm(true);
+                              }}
+                            >
+                              <Archive className="w-4 h-4" />
+                            </Button>
+                          </>
                         )}
                       </div>
                     </TableCell>
@@ -258,19 +299,43 @@ export function ProcessosPage() {
           </DialogHeader>
 
           <ProcessForm
-          processo={editingProcess}
-          onSubmit={(data) => {
-            if (editingProcess) {
-              handleEditProcess(data);
-            } else {
-              handleCreateProcess(data);
-            }
-          }}
-          onCancel={() => {
-            setEditingProcess(null);
-            setShowForm(false);
-          }}
-        />
+            processo={editingProcess}
+            onSubmit={(data) => {
+              if (editingProcess) {
+                handleEditProcess(data);
+              } else {
+                handleCreateProcess(data);
+              }
+            }}
+            onCancel={() => {
+              setEditingProcess(null);
+              setShowForm(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showArchiveForm} onOpenChange={setShowArchiveForm}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Archive className="w-5 h-5 text-orange-600" />
+              Arquivar Processo
+            </DialogTitle>
+            <DialogDescription>
+              Para arquivar este processo, é necessário submeter a decisão da diretora e os demais dados obrigatórios.
+            </DialogDescription>
+          </DialogHeader>
+          {archivingProcess && (
+            <ArchiveProcessForm
+              processo={archivingProcess}
+              onSubmit={handleArchiveProcess}
+              onCancel={() => {
+                setShowArchiveForm(false);
+                setArchivingProcess(null);
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -103,17 +103,7 @@ export const visualizar = async () => {
     if (!comissoes) {
         throw new ApiException(404, "Comissões não encontradas");
     }
-    return comissoes.map((comissao) => {
-        return {
-            id: comissao.id,
-            nome: comissao.nome,
-            descricao: comissao.descricao,
-            dataCriacao: comissao.dataCriacao,
-            estado: comissao.estado,
-            dataEncerramento: comissao.dataEncerramento,
-            funcionarios: comissao.funcionarios,
-        }
-    })
+    return comissoes;
 };
 
 export const pesquisarPorId = async (comissaoId: number) => {

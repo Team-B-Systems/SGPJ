@@ -20,6 +20,11 @@ const tiposProcesso = [
   'Civil'
 ];
 
+const estadosProcesso = [
+  'Aberto',
+  'EmAndamento',
+];
+
 export function ProcessForm({ processo, onSubmit, onCancel }: ProcessFormProps) {
   const { user } = useAuth();
 
@@ -30,7 +35,7 @@ export function ProcessForm({ processo, onSubmit, onCancel }: ProcessFormProps) 
     dataAbertura: new Date().toISOString().split('T')[0],
     assunto: '',
     tipoProcesso: '',
-    estado: '',
+    estado: processo?.estado || 'Aberto',
     dataEncerramento: null,
     responsavel: user!,       // agora correto: User, não string
     documentos: [],
@@ -118,16 +123,27 @@ export function ProcessForm({ processo, onSubmit, onCancel }: ProcessFormProps) 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="estado">Estado *</Label>
-          <Input
+          <Select
             id="estado"
             value={processo ? formData.estado : 'Aberto'}
-            onChange={(e) =>
-              setFormData({ ...formData, estado: e.target.value })
+            onValueChange={(e: any) =>
+              setFormData({ ...formData, estado: e })
             }
-            placeholder="Aberto, Em andamento, Encerrado..."
+            placeholder="Aberto, Em andamento, Arquivado..."
             required
-            disabled={processo === null}
-          />
+            disabled={processo === null || formData.estado !== 'Aberto'}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione o estado do processo" />
+            </SelectTrigger>
+            <SelectContent>
+              {estadosProcesso.map((tipo, index) => (
+                <SelectItem key={index} value={tipo}>
+                  {tipo}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {processo == null && (

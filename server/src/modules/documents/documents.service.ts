@@ -1,4 +1,4 @@
-import { EstadoProcesso, PrismaClient, Role } from "@prisma/client";
+import { EstadoProcesso, PrismaClient, Role, TipoDocumento } from "@prisma/client";
 import ApiException from "../../common/Exceptions/api.exception";
 import { AttachDocumentDTO } from "./dto/attach.dto";
 
@@ -29,6 +29,13 @@ export const anexarDocumento = async (userId: number, dto: AttachDocumentDTO) =>
             processoId: processo.id,
         },
     });
+
+    if (dto.tipoDocumento === TipoDocumento.Decisão) {
+        await prisma.processoJuridico.update({
+            where: { id: processo.id },
+            data: { estado: EstadoProcesso.Arquivado },
+        });
+    }
 
     const { ficheiro, ...documentoSemFicheiro } = documento
 

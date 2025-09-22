@@ -154,6 +154,7 @@ export interface ComissaoCreate {
     funcionarioId: number;
     papel: string;
   }[]
+}
 export interface EventoSistema {
   id: number;
   createdAt: Date;

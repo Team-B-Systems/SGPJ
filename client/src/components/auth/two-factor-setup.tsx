@@ -15,6 +15,7 @@ import {
   CheckCircle,
   AlertTriangle,
   RefreshCw,
+  RefreshCcw,
 } from 'lucide-react';
 import { generate2FASecret, verify2FA } from '../../lib/api';
 
@@ -34,23 +35,26 @@ export function TwoFactorSetup({ isOpen, onOpenChange }: TwoFactorSetupProps) {
 
   useEffect(() => {
     console.log("TwoFactorSetup opened:", isOpen);
-      const fetchQrCode = async () => {
-        try {
-          setIsLoading(true);
-          const result = await generate2FASecret();
-          setQrCode(result.qrCodeUrl);
-          setSecret(result.secret);
-        } catch (err) {
-          setError('Erro ao gerar QR Code. Tente novamente.');
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      if (!qrCode && isOpen) {
-        fetchQrCode();
+    const fetchQrCode = async () => {
+      try {
+        setIsLoading(true);
+        const result = await generate2FASecret();
+        setQrCode(result.qrCodeUrl);
+        setSecret(result.secret);
+      } catch (err) {
+        setError('Erro ao gerar QR Code. Tente novamente.');
+        console.error(err);
+      } finally {
+        setIsLoading(false);
       }
-    }, [qrCode]);
+    };
+
+    if (!qrCode && isOpen) {
+      fetchQrCode();
+    } else {
+      console.log("QR Code already loaded:", qrCode, !qrCode && isOpen);
+    }
+  }, [qrCode, isOpen]);
 
   const handleMethodSelect = () => {
     setSetupStep('setup');
@@ -160,7 +164,24 @@ export function TwoFactorSetup({ isOpen, onOpenChange }: TwoFactorSetupProps) {
                   ) : qrCode ? (
                     <img src={qrCode} alt="QR Code" className="w-full h-full" />
                   ) : (
-                    <div className="text-gray-400">Erro ao carregar QR Code</div>
+                    <>
+                      <div className="text-gray-400">Erro ao carregar QR Code</div>
+                      {
+                        qrCode === null ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              console.log("IsOpen: ", isOpen);
+                              setQrCode(null);
+                            }}
+                          >
+                            <RefreshCcw className="w-4 h-4 mr-2 animate-spin" />
+                            Recarregar QR Code
+                          </Button>
+                        ) : null
+                      }
+                    </>
                   )}
                   <div className="mt-4">
                     <p className="text-sm text-muted-foreground mb-1">Chave Secreta:</p>
