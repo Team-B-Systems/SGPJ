@@ -28,6 +28,7 @@ export interface User {
   estado: string;
   departamento: string;
   senha: string;
+  twoFactorSecret: boolean; // true se 2FA está ativo
 }
 
 export interface Processo {
@@ -61,16 +62,18 @@ export interface Envolvido {
   id: number;
   createdAt: string;
   updatedAt: string;
-  envolvidoId: number;
-  processoJuridicoId: number;
+  envolvidoId: number;           // referência ao envolvido
+  processoJuridicoId: number;   // id do processo associado
+  papelNoProcesso: string;
   envolvido: {
     id: number;
     createdAt: string;
     updatedAt: string;
     nome: string;
     numeroIdentificacao: string;
-    papelNoProcesso: string;
-  }
+    funcionarioId?: number;     // se for um funcionário interno
+    interno: boolean;           // true se for funcionário interno
+  };
 }
 
 interface Comissao {
@@ -120,6 +123,12 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface TwoFAResponse {
+  requires2FA: true;
+  tempToken: string;
+  user: User;
+}
+
 export interface GetFuncionariosResponse {
   funcionarios: User[];
 }
@@ -130,6 +139,16 @@ export interface ProcessoListResponse {
   page: number;
   pageSize: number;
   totalPages: number;
+}
+
+export interface EventoSistema {
+  id: number;
+  createdAt: Date;
+  funcionarioId: number | null;
+  entidade: string;
+  entidadeId: number | null;
+  tipoEvento: string;
+  descricao: string;
 }
 
 // --------- AUTH ---------
@@ -146,11 +165,13 @@ export async function signup(data: {
   return response.data;
 }
 
+export type LoginResponse = AuthResponse | TwoFAResponse;
+
 export async function login(data: {
   email: string;
   password: string;
   isAdmin: boolean;
-}): Promise<AuthResponse> {
+}): Promise<LoginResponse> {
   let endpoint: string;
   if (data.isAdmin) {
     endpoint = "/admin/login";
@@ -158,10 +179,49 @@ export async function login(data: {
     endpoint = "/auth/login";
   }
 
-  const response = await api.post<AuthResponse>(endpoint, {
+  const response = await api.post(endpoint, {
     email: data.email,
     senha: data.password,
   });
+
+  // Se o backend avisar que precisa de 2FA
+  if (response.data.requires2FA) {
+    const result: TwoFAResponse = {
+      requires2FA: true,
+      tempToken: response.data.tempToken,
+      user: response.data.user,
+    };
+    return result;
+  }
+
+  // Caso contrário → login normal
+  localStorage.setItem("access_token", response.data.token);
+
+  const result: AuthResponse = {
+    token: response.data.token,
+    user: response.data.user,
+  };
+
+  return result;
+}
+
+export async function changePassword(oldPassword: string, newPassword: string): Promise<{ message: string }> {
+  const response = await api.post<{ message: string }>("/auth/change-password", {
+    oldPassword,
+    newPassword,
+  });
+
+  return response.data;
+}
+
+export const generate2FASecret = async (): Promise<{ qrCodeUrl: string; secret: string }> => {
+  const response = await api.post<{ qrCodeUrl: string; secret: string }>("/auth/2fa/generate");
+
+  return response.data;
+}
+
+export const verify2FA = async (tempToken: string, code: string): Promise<{ token: string }> => {
+  const response = await api.post<{ token: string }>("/auth/2fa/verify", { tempToken, code });
 
   localStorage.setItem("access_token", response.data.token);
 
@@ -268,17 +328,17 @@ export async function createQueixa(data: Queixa): Promise<Queixa> {
   return response.data;
 }
 
-export async function editQueixa(id: number, data: Partial<Queixa>): Promise<Queixa> {
+export async function editQueixa(id: number, data: Partial<Queixa | any>): Promise<Queixa> {
   const fd = new FormData();
   if (data.descricao) fd.append("descricao", data.descricao);
   if (data.estado) fd.append("estado", data.estado);
   if (data.dataEntrada) fd.append("dataEntrada", data.dataEntrada);
   if (data.ficheiro) fd.append("ficheiro", data.ficheiro);
   if (data.pPassivaId !== undefined) fd.append("pPassivaId", data.pPassivaId.toString());
-  //if (data.processoId !== undefined) fd.append("processoId", data.processoId.toString());
+  if (data.assuntoProcesso !== undefined) fd.append("assuntoProcesso", data.assuntoProcesso);
   if (data.funcionarioId !== undefined) fd.append("funcionarioId", data.funcionarioId.toString());
 
-  const response = await api.patch<Queixa>(`/queixa/editar/${id}`, fd,{
+  const response = await api.patch<Queixa>(`/queixa/editar/${id}`, fd, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -361,3 +421,12 @@ export async function downloadDocument(id: number): Promise<Blob> {
 }
 
 export default api;
+
+// --------- EVENTOS SISTEMA ---------
+export const getAllEventosSistema = async (page: number = 1, pageSize: number = 10): Promise<EventoSistema[]> => {
+  const response = await api.get<EventoSistema[]>(`/events/list`);
+
+  console.log("Eventos do sistema:", response.data);
+
+  return response.data;
+}

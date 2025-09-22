@@ -135,7 +135,7 @@ export function EnvolvidosProcesso({ processo, envolvidos, onUpdateEnvolvidos }:
                   <TableCell>
                     <p className="font-medium">{envolvido.envolvido.nome}</p>
                   </TableCell>
-                  <TableCell>{getTipoBadge(envolvido.envolvido.papelNoProcesso)}</TableCell>
+                  <TableCell>{getTipoBadge(envolvido.papelNoProcesso)}</TableCell>
                   <TableCell>
                     <div className="flex items-center">
                       <Mail className="w-4 h-4 mr-2 text-muted-foreground" />

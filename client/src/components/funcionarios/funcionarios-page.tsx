@@ -58,6 +58,8 @@ export function FuncionariosPage() {
     };
     addFuncionario(newFuncionario);
     setShowForm(false);
+
+    window.location.reload();
   };
 
   const handleEditFuncionario = async (funcionarioData: Omit<User, 'email'>) => {
@@ -70,13 +72,7 @@ export function FuncionariosPage() {
     console.log("Funcionario atualizado:", funcionarioData);
     setEditingFuncionario(null);
     setShowForm(false);
-  };
-
-  const handleToggleStatus = (email: string) => {
-    const updatedFuncionarios = funcionarios.map(f =>
-      f.email === email ? { ...f, estado: f.estado === 'ativo' ? 'inativo' as const : 'ativo' as const } : f
-    );
-    //setFuncionarios(updatedFuncionarios);
+    window.location.reload();
   };
 
   const getStatusBadge = (status: string) => {

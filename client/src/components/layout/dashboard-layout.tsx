@@ -11,6 +11,7 @@ import {
   LogOut,
   Menu,
   X,
+  Activity,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { useAuth } from "../../lib/auth-context";
@@ -23,17 +24,26 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const menuItems = [
-    { path: "/", label: "Dashboard", icon: Scale, roles: ["Funcionário", "Chefe"] },
-    { path: "/processos", label: "Processos", icon: FileText, roles: ["Funcionário", "Chefe"] },
-    { path: "/documentos", label: "Documentos", icon: FileText, roles: ["Funcionário", "Chefe"] },
-    { path: "/reunioes", label: "Reuniões", icon: Calendar, roles: ["Funcionário", "Chefe"] },
-    { path: "/envolvidos", label: "Envolvidos", icon: UserPlus, roles: ["Funcionário", "Chefe"] },
-    { path: "/queixas", label: "Queixas", icon: AlertTriangle, roles: ["Funcionário", "Chefe"] },
-    { path: "/comissoes", label: "Comissões", icon: Building, roles: ["Funcionário", "Chefe"] },
-    { path: "/funcionarios", label: "Funcionários", icon: Users, roles: ["Admin"] },
-    { path: "/perfil", label: "Perfil", icon: User, roles: ["Funcionário", "Chefe", "Admin"] },
-  ];
+  const menuItems: {
+    path: string;
+    label: string;
+    icon: any;
+    roles: string[];
+  }[] =
+    user?.estado === 'Ativo' ? [
+      { path: "/", label: "Dashboard", icon: Scale, roles: ["Funcionário", "Chefe", "Admin"] },
+      { path: "/processos", label: "Processos", icon: FileText, roles: ["Funcionário", "Chefe"] },
+      { path: "/documentos", label: "Documentos", icon: FileText, roles: ["Funcionário", "Chefe"] },
+      { path: "/reunioes", label: "Reuniões", icon: Calendar, roles: ["Funcionário", "Chefe"] },
+      { path: "/envolvidos", label: "Envolvidos", icon: UserPlus, roles: ["Funcionário", "Chefe"] },
+      { path: "/queixas", label: "Queixas", icon: AlertTriangle, roles: ["Funcionário", "Chefe"] },
+      { path: "/comissoes", label: "Comissões", icon: Building, roles: ["Funcionário", "Chefe"] },
+      { path: "/funcionarios", label: "Funcionários", icon: Users, roles: ["Admin"] },
+      { path: "/eventos-sistema", label: "Eventos do Sistema", icon: Activity, roles: ["Admin"] },
+      { path: "/perfil", label: "Perfil", icon: User, roles: ["Funcionário", "Chefe", "Admin"] },
+    ] : [
+      { path: "/perfil", label: "Perfil", icon: User, roles: ["Funcionário", "Chefe", "Admin"] },
+    ];
 
   const visibleMenuItems = menuItems.filter(
     (item) => user && item.roles.includes(user.role)

@@ -6,13 +6,13 @@ import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
 import { useAuth } from '../../lib/auth-context';
-import { User, Mail, Briefcase, Calendar, Shield, Edit } from 'lucide-react';
+import { User, Mail, Briefcase, Calendar, Shield, Edit, CheckSquareIcon } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
 import { TwoFactorSetup } from '../auth/two-factor-setup';
-import { updateFuncionarioPerfil } from '../../lib/api';
+import { ChangePassword } from '../auth/change-password';
 
 export function PerfilPage() {
-  const { user, update } = useAuth();
+  const { user, update, logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     nome: user?.nome || '',
@@ -21,6 +21,8 @@ export function PerfilPage() {
   });
   const [saveMessage, setSaveMessage] = useState('');
   const [show2FADialog, setShow2FADialog] = useState(false);
+  const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
+  const isActive = user?.estado === 'Ativo';
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,6 +103,14 @@ export function PerfilPage() {
 
   return (
     <div className="space-y-6 max-w-4xl">
+      {/* Informação de que o utilizador só poderá utilizar plenamente o sistema após alterar a senha */}
+      {!isActive && (
+        <Alert variant="warning">
+          <AlertDescription className='text-yellow-800 text-lg text-center text-bold'>
+            Seu estado atual é "{user.estado}". Por favor, altere sua senha, abaixo, para ativar sua conta e ter acesso a todas as funcionalidades do sistema.
+          </AlertDescription>
+        </Alert>
+      )}
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
@@ -110,7 +120,10 @@ export function PerfilPage() {
           </p>
         </div>
         {!isEditing && (
-          <Button onClick={() => setIsEditing(true)}>
+          <Button
+            onClick={() => setIsEditing(true)}
+            disabled={isEditing || !isActive}
+          >
             <Edit className="w-4 h-4 mr-2" />
             Editar Perfil
           </Button>
@@ -256,6 +269,7 @@ export function PerfilPage() {
               <CardTitle>Permissões</CardTitle>
               <CardDescription>
                 O que você pode fazer no sistema
+                {!isActive && " (Limitado até ativar a conta)"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -271,34 +285,36 @@ export function PerfilPage() {
           </Card>
 
           {/* Quick Stats */}
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Estatísticas</CardTitle>
-              <CardDescription>
-                Seu resumo de atividades
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Processos Ativos</span>
-                  <span className="text-sm font-semibold">3</span>
+          {isActive && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Estatísticas</CardTitle>
+                <CardDescription>
+                  Seu resumo de atividades
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Processos Ativos</span>
+                    <span className="text-sm font-semibold">3</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Documentos Enviados</span>
+                    <span className="text-sm font-semibold">12</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Reuniões Este Mês</span>
+                    <span className="text-sm font-semibold">8</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Queixas Resolvidas</span>
+                    <span className="text-sm font-semibold">5</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Documentos Enviados</span>
-                  <span className="text-sm font-semibold">12</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Reuniões Este Mês</span>
-                  <span className="text-sm font-semibold">8</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Queixas Resolvidas</span>
-                  <span className="text-sm font-semibold">5</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
@@ -312,29 +328,43 @@ export function PerfilPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex justify-between items-center p-4 border rounded-lg">
-              <div>
-                <h4 className="font-medium">Alterar Senha</h4>
-                <p className="text-sm text-muted-foreground">
-                  Atualize sua senha para manter sua conta segura
-                </p>
+            {!isActive && (
+              <div className="flex justify-between items-center p-4 border rounded-lg">
+                <div>
+                  <h4 className="font-medium">Alterar Senha</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Atualize sua senha para manter sua conta segura
+                  </p>
+                </div>
+                <Button variant="outline" onClick={() => setShowChangePasswordDialog(true)}>
+                  Alterar Senha
+                </Button>
               </div>
-              <Button variant="outline">
-                Alterar Senha
-              </Button>
-            </div>
+            )}
 
-            <div className="flex justify-between items-center p-4 border rounded-lg">
-              <div>
-                <h4 className="font-medium">Autenticação de Dois Fatores</h4>
-                <p className="text-sm text-muted-foreground">
-                  Adicione uma camada extra de segurança à sua conta
-                </p>
+            {!user.twoFactorSecret ? (
+              <div className="flex justify-between items-center p-4 border rounded-lg">
+                <div>
+                  <h4 className="font-medium">Autenticação de Dois Fatores</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Adicione uma camada extra de segurança à sua conta
+                  </p>
+                </div>
+                <Button variant="outline" onClick={() => setShow2FADialog(true)}>
+                  Configurar
+                </Button>
               </div>
-              <Button variant="outline" onClick={() => setShow2FADialog(true)}>
-                Configurar
-              </Button>
-            </div>
+            ) : (
+              <div className="flex justify-between items-center p-4 border rounded-lg">
+                <div>
+                  <h4 className="font-medium">Autenticação de Dois Fatores</h4>
+                  <p className="text-sm text-muted-foreground">
+                    A autenticação de dois fatores está ativada na sua conta
+                  </p>
+                </div>
+                <CheckSquareIcon className="w-6 h-6 text-green-500" />
+              </div>
+            )}
 
             <div className="flex justify-between items-center p-4 border rounded-lg">
               <div>
@@ -350,6 +380,17 @@ export function PerfilPage() {
           </div>
         </CardContent>
       </Card>
+
+      <ChangePassword
+        isOpen={showChangePasswordDialog}
+        onOpenChange={(open) => {
+          setShowChangePasswordDialog(open);
+
+          if (!open) {
+            logout()
+          }
+        }}
+      />
 
       <TwoFactorSetup
         isOpen={show2FADialog}

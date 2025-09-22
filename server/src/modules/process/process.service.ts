@@ -1,8 +1,9 @@
-import { EstadoProcesso, PrismaClient, Reuniao } from "@prisma/client";
+import { EstadoProcesso, PrismaClient, Reuniao, TipoEvento } from "@prisma/client";
 import ApiException from "../../common/Exceptions/api.exception";
 import { RegisterDTO } from "./dto/register.dto";
 import { EditDTO } from "./dto/edit.dto";
 import { ArchiveDTO } from "./dto/archive.dto";
+import { logEvent } from "../events/events.service";
 
 const prisma = new PrismaClient();
 
@@ -35,6 +36,14 @@ export const registerProcess = async (userId: number, dto: RegisterDTO) => {
         },
     });
 
+    logEvent({
+        tipoEvento: TipoEvento.CREATE,
+        descricao: `Processo criado com ID ${newProcess.id}`,
+        entidadeId: newProcess.id,
+        entidade: "Processo",
+        funcionarioId: userId,
+    })
+
     return {
         process: newProcess,
         message: "Processo registrado com sucesso",
@@ -59,6 +68,14 @@ export const editProcess = async (userId: number, processId: number, dto: EditDT
             dataEncerramento: dto.estado === EstadoProcesso.Arquivado ? new Date() : existingProcess.dataEncerramento,
         },
     });
+
+    logEvent({
+        tipoEvento: TipoEvento.UPDATE,
+        descricao: `Processo com ID ${processId} editado`,
+        entidadeId: processId,
+        entidade: "Processo",
+        funcionarioId: userId,
+    })
 
     return {
         process: updatedProcess,
@@ -211,6 +228,14 @@ export const archiveProcess = async (userId: number, processId: number, dto: Arc
         }
     });
 
+    logEvent({
+        tipoEvento: TipoEvento.CREATE,
+        descricao: `Parecer criado com ID ${parecer.id} para o processo ID ${processId}`,
+        entidadeId: parecer.id,
+        entidade: "Parecer",
+        funcionarioId: userId,
+    })
+
     const archivedProcess = await prisma.processoJuridico.update({
         where: { id: processId },
         data: {
@@ -221,6 +246,14 @@ export const archiveProcess = async (userId: number, processId: number, dto: Arc
             },
         },
     });
+
+    logEvent({
+        tipoEvento: TipoEvento.UPDATE,
+        descricao: `Processo com ID ${processId} arquivado`,
+        entidadeId: processId,
+        entidade: "Processo",
+        funcionarioId: userId,
+    })
 
     return {
         process: archivedProcess,

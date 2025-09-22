@@ -3,17 +3,21 @@ import {
   login as apiLogin,
   getFuncionarioPerfil,
   updateFuncionarioPerfil,
+  changePassword as apiChangePassword,
   type User,
+  type AuthResponse,
 } from "../lib/api";
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   login: (email: string, password: string, isAdmin: boolean) => Promise<boolean>;
   logout: () => void;
   getToken: () => string | null;
   update: (nome: string) => Promise<void>;
+  changePassword: (oldPassword: string, newPassword: string) => Promise<{ message: string }>;
 }
 
 interface SignupData {
@@ -65,20 +69,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = async (email: string, password: string, isAdmin: boolean) => {
     setLoading(true);
     try {
-      const { token, user } = await apiLogin({ email, password, isAdmin });
-      localStorage.setItem("access_token", token);
-      localStorage.setItem("user", JSON.stringify(user));
-      setUser(user);
+      const response = await apiLogin({ email, password, isAdmin });
 
-      return true;
+      if ('token' in response) {
+        localStorage.setItem("access_token", response.token);
+        localStorage.setItem("user", JSON.stringify(response.user));
+        setUser(response.user);
+
+        return true;
+      }
+
+      if ("requires2FA" in response) {
+        localStorage.setItem("temp_token", response.tempToken);
+        return false;
+      }
+
+      return false;
     } catch (err: any) {
       const apiMessage =
         err?.response?.data?.error || err.message || "Erro desconhecido";
       console.error("Erro no login:", apiMessage);
-      throw new Error(apiMessage);
     } finally {
       setLoading(false);
     }
+
+    return false;
   };
 
   const logout = () => {
@@ -104,16 +119,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const getToken = () => localStorage.getItem("access_token");
 
+  const changePassword = async (oldPassword: string, newPassword: string) => {
+    try {
+      const response = await apiChangePassword(oldPassword, newPassword);
+      return response;
+    } catch (error: any) {
+      console.error("Erro ao alterar a senha:", error);
+      return { message: error.data.error || "Erro da aplicação, tente novamente." };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
         loading,
         isAuthenticated: !!user,
+        setUser,
         login,
         logout,
         getToken,
         update,
+        changePassword,
       }}
     >
       {children}

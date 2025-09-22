@@ -19,9 +19,9 @@ export function FuncionarioForm({ funcionario, onSubmit, onCancel }: Funcionario
     numeroIdentificacao: '',
     nomeDepartamento: '',
     dataAdmissao: '',
-    estado: '',
+    estado: 'Inativo',
     role: '',
-    senha: '',
+    senha: 'senha123',
   });
 
   useEffect(() => {
@@ -61,6 +61,7 @@ export function FuncionarioForm({ funcionario, onSubmit, onCancel }: Funcionario
       role: formData.role,
       numeroIdentificacao: formData.numeroIdentificacao,
       senha: formData.senha,
+      twoFactorSecret: false,
     };
     onSubmit(mappedData);
   };
@@ -180,25 +181,19 @@ export function FuncionarioForm({ funcionario, onSubmit, onCancel }: Funcionario
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="senha">Senha *</Label>
+          <Label htmlFor="senha">Senha</Label>
           <Input
             id="senha"
-            type="password"
             value={formData.senha}
-            onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
-            placeholder="*******"
-            required
-            disabled={!!funcionario}
+            disabled
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="status">Estado *</Label>
+          <Label htmlFor="status">Estado</Label>
           <Select
             value={formData.estado}
-            onValueChange={(value: 'Ativo' | 'Inativo') =>
-              setFormData({ ...formData, estado: value })
-            }
+            disabled
           >
             <SelectTrigger>
               <SelectValue />
@@ -212,11 +207,11 @@ export function FuncionarioForm({ funcionario, onSubmit, onCancel }: Funcionario
       </div>
 
       <div className="bg-blue-50 p-4 rounded-lg">
-        <h4 className="font-medium mb-2">Permissões por Perfil:</h4>
+        <h4 className="font-medium mb-2">Informações úteis</h4>
         <ul className="text-sm text-muted-foreground space-y-1">
           <li><strong>Funcionário:</strong> Visualizar e gerenciar processos, documentos, reuniões</li>
           <li><strong>Chefe:</strong> Todas as funções do funcionário + gestão de comissões</li>
-          <li><strong>Administrador:</strong> Acesso total + gestão de funcionários</li>
+          <li><strong>senha123:</strong> Esta senha é a padrão para todos os funcionários novos, no primeiro acesso o funcionário deve alterar a senha</li>
         </ul>
       </div>
 

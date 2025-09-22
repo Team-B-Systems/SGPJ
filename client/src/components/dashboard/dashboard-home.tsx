@@ -44,12 +44,6 @@ export function DashboardHome() {
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     .slice(0, 5);
 
-  /*
-    const reunioesProximas = mockReunioes
-    .filter(r => r.status === 'agendada')
-    .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
-    .slice(0, 3);*/
-
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
@@ -152,42 +146,6 @@ export function DashboardHome() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Upcoming Meetings */}
-          {/*
-        <Card>
-          <CardHeader>
-            <CardTitle>Próximas Reuniões</CardTitle>
-            <CardDescription>Reuniões agendadas</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {reunioesProximas.length > 0 ? (
-                reunioesProximas.map((reuniao) => (
-                  <div key={reuniao.id} className="flex items-center space-x-3">
-                    <div className="flex-shrink-0">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{reuniao.titulo}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(reuniao.data).toLocaleDateString('pt-BR')} às {reuniao.hora}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        📍 {reuniao.local}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma reunião agendada
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-        */}
         </div>
       )}
 
@@ -198,7 +156,9 @@ export function DashboardHome() {
             <CardTitle>Ações Rápidas</CardTitle>
             <CardDescription>Tarefas administrativas frequentes</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent
+            onClick={() => navigate('/funcionarios')}
+          >
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
                 <Users className="h-8 w-8 text-blue-600 mb-2" />

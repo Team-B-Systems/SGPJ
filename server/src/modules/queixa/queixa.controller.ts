@@ -47,7 +47,7 @@ export const editar = async (req: AuthRequest, res: Response) => {
         };
 
         const id = parseInt(req.params.id, 10)
-        const result = await queixaService.editar(id, dto);
+        const result = await queixaService.editar(id, dto, req.user.userId);
         res.json(result);
     } catch (err: any) {
         if (err instanceof ApiException) {
