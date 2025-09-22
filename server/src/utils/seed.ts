@@ -4,7 +4,7 @@ import { hashPassword } from './hash'
 const prisma = new PrismaClient()
 
 async function main() {
-  // Departamentos
+  // ---------- Departamentos ----------
   await prisma.departamento.createMany({
     data: [
       { nome: 'RecursosHumanos', descricao: 'Departamento de Recursos Humanos' },
@@ -22,18 +22,18 @@ async function main() {
 
   const hashedPassword = await hashPassword('senha123');
 
-  // Funcionários
+  // ---------- Funcionários ----------
   const [ana, carlos, joao, sofia, miguel] = await Promise.all([
     prisma.funcionario.create({
       data: {
         nome: 'Ana Silva',
         numeroIdentificacao: 'BI12345',
         email: 'ana@empresa.com',
-        categoria: 'Chefe',
+        categoria: 'Técnico',
         senha: hashedPassword,
         estado: 'Ativo',
-        role: 'Admin',
-        departamentoId: depJur.id,
+        role: 'Admin',          // TI sempre Admin
+        departamentoId: depTI.id,
       },
     }),
     prisma.funcionario.create({
@@ -44,7 +44,7 @@ async function main() {
         categoria: 'Técnico',
         senha: hashedPassword,
         estado: 'Ativo',
-        role: 'Funcionário',
+        role: 'Funcionário',    // Jurídico pode ser responsável
         departamentoId: depJur.id,
       },
     }),
@@ -68,8 +68,8 @@ async function main() {
         categoria: 'Técnico',
         senha: hashedPassword,
         estado: 'Ativo',
-        role: 'Funcionário',
-        departamentoId: depTI.id,
+        role: 'Funcionário',    // Jurídico
+        departamentoId: depJur.id,
       },
     }),
     prisma.funcionario.create({
@@ -86,14 +86,14 @@ async function main() {
     }),
   ])
 
-  // Partes Passivas
+  // ---------- Partes Passivas ----------
   const [parte1, parte2, parte3] = await Promise.all([
     prisma.partePassiva.create({ data: { nome: 'Empresa XYZ' } }),
     prisma.partePassiva.create({ data: { nome: 'Funcionário José Almeida' } }),
     prisma.partePassiva.create({ data: { nome: 'Cliente Maria Sousa' } }),
   ])
 
-  // Queixas
+  // ---------- Queixas ----------
   const [queixa1, queixa2] = await Promise.all([
     prisma.queixa.create({
       data: {
@@ -101,7 +101,7 @@ async function main() {
         descricao: 'Assédio moral relatado por funcionário.',
         estado: 'EmAnalise',
         pPassivaId: parte2.id,
-        funcionarioId: carlos.id,
+        funcionarioId: carlos.id, // Jurídico
         departamentos: { create: { departamentoId: depJur.id } },
       },
     }),
@@ -111,13 +111,13 @@ async function main() {
         descricao: 'Disputa contratual com cliente.',
         estado: 'Pendente',
         pPassivaId: parte3.id,
-        funcionarioId: joao.id,
+        funcionarioId: joao.id, // RH
         departamentos: { create: { departamentoId: depJur.id } },
       },
     }),
   ])
 
-  // Processos Jurídicos
+  // ---------- Processos Jurídicos ----------
   const [proc1, proc2] = await Promise.all([
     prisma.processoJuridico.create({
       data: {
@@ -126,7 +126,7 @@ async function main() {
         assunto: 'Investigação de assédio moral',
         tipoProcesso: 'Disciplinar',
         estado: 'EmAndamento',
-        responsavelId: ana.id,
+        responsavelId: carlos.id, // Jurídico
         queixaId: queixa1.id,
       },
     }),
@@ -137,13 +137,13 @@ async function main() {
         assunto: 'Litígio com cliente',
         tipoProcesso: 'Cível',
         estado: 'Aberto',
-        responsavelId: carlos.id,
+        responsavelId: sofia.id, // Jurídico
         queixaId: queixa2.id,
       },
     }),
   ])
 
-  // Documentos
+  // ---------- Documentos ----------
   await prisma.documento.createMany({
     data: [
       {
@@ -163,7 +163,7 @@ async function main() {
     ],
   })
 
-  // Comissão
+  // ---------- Comissão ----------
   const comissao1 = await prisma.comissao.create({
     data: {
       nome: 'Comissão Disciplinar',
@@ -178,7 +178,7 @@ async function main() {
     },
   })
 
-  // Reuniões
+  // ---------- Reuniões ----------
   await prisma.reuniao.createMany({
     data: [
       {
@@ -198,30 +198,30 @@ async function main() {
     ],
   })
 
-  // Envolvidos externos
+  // ---------- Envolvidos externos ----------
   const envolvido1 = await prisma.envolvido.create({
     data: {
       nome: 'Maria Oliveira',
       numeroIdentificacao: 'CC112233',
-      papelNoProcesso: 'Testemunha',
+      interno: false,
     },
   })
   const envolvido2 = await prisma.envolvido.create({
     data: {
       nome: 'Pedro Lima',
       numeroIdentificacao: 'CC445566',
-      papelNoProcesso: 'Perito',
+      interno: false,
     },
   })
 
   await prisma.envolvidoProcessoJuridico.createMany({
     data: [
-      { envolvidoId: envolvido1.id, processoJuridicoId: proc1.id },
-      { envolvidoId: envolvido2.id, processoJuridicoId: proc2.id },
+      { envolvidoId: envolvido1.id, processoJuridicoId: proc1.id, papelNoProcesso: 'Testemunha' },
+      { envolvidoId: envolvido2.id, processoJuridicoId: proc2.id, papelNoProcesso: 'Perito' },
     ],
   })
 
-  // Decisões
+  // ---------- Decisões ----------
   await prisma.decisao.createMany({
     data: [
       {
@@ -239,7 +239,7 @@ async function main() {
     ],
   })
 
-  // Pareceres
+  // ---------- Pareceres ----------
   await prisma.parecer.createMany({
     data: [
       {
@@ -254,6 +254,8 @@ async function main() {
       },
     ],
   })
+
+  console.log('✅ Seed concluído com ajustes de roles e responsáveis!')
 }
 
 main()

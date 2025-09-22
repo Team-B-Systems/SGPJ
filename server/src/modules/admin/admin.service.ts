@@ -1,9 +1,10 @@
-import { PrismaClient, Role } from "@prisma/client";
+import { Departamento, PrismaClient, Role } from "@prisma/client";
 import { LoginDto } from "./dto/login.dto";
 import { comparePassword } from "../../utils/hash";
 import jwt from "jsonwebtoken";
 import { EditDto } from "./dto/edit.dto";
 import ApiException from "../../common/Exceptions/api.exception";
+import { logEvent } from "../events/events.service";
 
 const prisma = new PrismaClient();
 
@@ -45,7 +46,6 @@ export const perfil = async (userId: number) => {
 };
 
 export const editarPerfil = async (userId: number, dto: EditDto) => {
-
     const user = await prisma.funcionario.findUnique({
         where: { email: dto.email }
     });
@@ -54,12 +54,29 @@ export const editarPerfil = async (userId: number, dto: EditDto) => {
         throw new ApiException(404, "Utilizador não encontrado");
     }
 
+    const departamento = await prisma.departamento.findFirst({
+        where: { nome: dto.departamento },
+    });
+
+    if (dto.departamento && !departamento) {
+        throw new ApiException(404, "Departamento não encontrado");
+    }
+
     const updateUser = await prisma.funcionario.update({
         where: { email: dto.email },
         data: {
-            nome: dto.nome,
-            estado: dto.estado,
+            nome: dto.nome ?? user.nome,
+            estado: dto.estado ?? user.estado,
+            departamentoId: departamento ? departamento.id : user.departamentoId,
         },
+    });
+
+    logEvent({
+        funcionarioId: userId,
+        entidade: "Funcionário",
+        entidadeId: user.id,
+        tipoEvento: "UPDATE",
+        descricao: `Perfil do funcionário ${user.nome} (${user.email}) atualizado`,
     });
 
     return updateUser;
@@ -76,7 +93,7 @@ export const listarFuncionarios = async () => {
         throw new ApiException(404, "Utilizadores não encontrados");
     }
 
-    
+
     return users.map((user) => {
         return {
             id: user.id,

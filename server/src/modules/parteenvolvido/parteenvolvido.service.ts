@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { Envolvido, Funcionario, PrismaClient } from "@prisma/client";
 import { AdicionarDTO } from "./dto/adicionar.dto";
 import ApiException from "../../common/Exceptions/api.exception";
 
@@ -35,25 +35,72 @@ export const adicionarParteEnvolvida = async (userId: number, dto: AdicionarDTO)
         throw new ApiException(400, "Parte envolvida já associada a este processo");
     }
 
-    // const parteEnvolvida = await prisma.envolvido.create({
-    //     data: {
-    //         nome: dto.nome,
-    //         numeroIdentificacao: dto.numeroIdentificacao,
-    //        // papelNoProcesso: dto.papel,
-    //     },
-    // });
+    const funcionario = await prisma.funcionario.findUnique({
+    where: { numeroIdentificacao: dto.numeroIdentificacao },
+  });
 
-    // // await prisma.envolvidoProcessoJuridico.create({
-    //     data: {
-    //         processoJuridicoId: processo.id,
-    //         envolvidoId: parteEnvolvida.id,
-    //     },
-    // });
+    const result = await prisma.$transaction(async (tx) => {
+    let envolvido: Envolvido | null = null;
 
-    return {
-        message: "Parte envolvida adicionada com sucesso",
-        //parteEnvolvida,
-    };
+    if (funcionario) {
+      // funcionário
+      envolvido = await tx.envolvido.findFirst({
+        where: { funcionarioId: funcionario.id },
+      });
+
+      if (!envolvido) {
+        envolvido = await tx.envolvido.create({
+          data: {
+            nome: funcionario.nome,
+            numeroIdentificacao: funcionario.numeroIdentificacao,
+            funcionarioId: funcionario.id,
+            interno: true,
+          },
+        });
+      }
+    } else {
+      // externo
+      envolvido = await tx.envolvido.findFirst({
+        where: { numeroIdentificacao: dto.numeroIdentificacao },
+      });
+
+      if (!envolvido) {
+        envolvido = await tx.envolvido.create({
+          data: {
+            nome: dto.nome,
+            numeroIdentificacao: dto.numeroIdentificacao,
+          },
+        });
+      }
+    }
+
+    // 5️⃣ Cria o registro de relação com o processo
+    const envolvidoProcesso = await tx.envolvidoProcessoJuridico.create({
+      data: {
+        processoJuridicoId: dto.processoId,
+        envolvidoId: envolvido.id,
+        papelNoProcesso: dto.papel,
+      },
+    });
+
+    await tx.eventoSistema.create({
+      data: {
+        funcionarioId: userId,
+        entidade: "EnvolvidoProcessoJuridico",
+        entidadeId: envolvidoProcesso.id,
+        tipoEvento: "CREATE",
+        descricao: `O funcionário ${userId} adicionou o envolvido '${envolvido.nome}' (ID ${envolvido.id}) ao processo '${processo.numeroProcesso}' com papel '${dto.papel}'.`,
+      },
+    })
+
+    return { envolvido, envolvidoProcesso };
+  });
+
+  return {
+    message: "Parte envolvida adicionada com sucesso",
+    parteEnvolvida: result.envolvido,
+    relacionamento: result.envolvidoProcesso,
+  };
 }
 
 export const listarPartesEnvolvidas = async (userId: number, processoId: number, isChefe: boolean = false) => {

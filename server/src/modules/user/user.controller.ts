@@ -13,7 +13,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 
         const user = await userService.getProfile(userId);
         
-        res.status(200).json({ user });
+        res.status(200).json(user);
     } catch (err: any) {
         if (err instanceof ApiException) {
             res.status(err.status).json({ error: err.message });

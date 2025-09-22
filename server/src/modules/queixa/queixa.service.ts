@@ -1,8 +1,10 @@
-import { EstadoQueixa, PrismaClient } from "@prisma/client";
+import { EstadoProcesso, EstadoQueixa, PrismaClient, TipoDeProcesso, TipoEvento } from "@prisma/client";
 import { QueixaDto } from "./dto/registar.dto";
 import ApiException from "../../common/Exceptions/api.exception";
 import { cadastrar } from "../partepassiva/partepassiva.service";
 import { EditarQueixaDto } from "./dto/editar.dto";
+import { registerProcess } from "../process/process.service";
+import { logEvent } from "../events/events.service";
 
 const prisma = new PrismaClient()
 
@@ -16,14 +18,14 @@ export const cadastrarQueixa = async (dto: QueixaDto) => {
     }
     const partePassiva_ = await cadastrar({ nome: funcionario.nome, funcionario: dto.funcionarioId });
 
+    const currentDate = new Date();
 
     const newQueixa = await prisma.queixa.create({
         data: {
-            dataEntrada: dto.dataEntrada,
+            dataEntrada: currentDate.toISOString(),
             descricao: dto.descricao,
             estado: dto.estado,
             ficheiro: dto.ficheiro?.buffer ?? undefined,
-            processoId: dto.processoId ?? undefined,
             pPassivaId: partePassiva_.id,
             funcionarioId: dto.funcionarioId,
             departamentos: {
@@ -38,12 +40,20 @@ export const cadastrarQueixa = async (dto: QueixaDto) => {
         }
     });
 
+    logEvent({
+        tipoEvento: TipoEvento.CREATE,
+        descricao: `Queixa criada com ID ${newQueixa.id}`,
+        entidadeId: newQueixa.id,
+        entidade: "Queixa",
+        funcionarioId: dto.funcionarioId,
+    })
+
     const { id, ...sanitizedQueixa } = newQueixa
     return sanitizedQueixa
 };
 
-export const editar = async (queixaId: number, dto: EditarQueixaDto) => {
-    console.log("Editando queixa: ",dto);
+export const editar = async (queixaId: number, dto: EditarQueixaDto, userId: number) => {
+    console.log("Editando queixa: ", dto);
     const queixa = await prisma.queixa.findUnique({
         where: { id: queixaId }
     });
@@ -53,23 +63,50 @@ export const editar = async (queixaId: number, dto: EditarQueixaDto) => {
     }
 
     if (queixa.estado === EstadoQueixa.EmAnalise && dto.estado === EstadoQueixa.EmAnalise) {
-        throw new ApiException(400, "Já se encontra em analise"); 
+        throw new ApiException(400, "Já se encontra em analise");
     }
 
     if (queixa.estado === EstadoQueixa.Aceite && dto.estado !== EstadoQueixa.Aceite) {
-        throw new ApiException(400, "A queixa já foi aceite e não pode ser editada"); 
+        throw new ApiException(400, "A queixa já foi aceite e não pode ser editada");
     }
     if (queixa.estado === EstadoQueixa.Rejeitada) {
-        throw new ApiException(400, "A queixa já foi rejeitada e não pode ser editada"); 
+        throw new ApiException(400, "A queixa já foi rejeitada e não pode ser editada");
     }
 
-    const updateQueixa = await prisma.queixa.update({
-        where: { id: queixaId },
-        data: {
-            estado: dto.estado,
-            descricao: dto.descricao,
-            ficheiro: dto.ficheiro?.buffer ?? undefined,
-        },
+    let updateQueixa;
+
+    if (dto.assuntoProcesso && dto.estado === EstadoQueixa.Aceite) {
+        const process = await registerProcess(userId, {
+            assunto: dto.assuntoProcesso,
+            tipo: TipoDeProcesso.Disciplinar,
+        });
+
+        updateQueixa = await prisma.queixa.update({
+            where: { id: queixaId },
+            data: {
+                estado: EstadoQueixa.Aceite,
+                descricao: dto.descricao,
+                ficheiro: dto.ficheiro?.buffer ?? undefined,
+                processoId: process.process.id,
+            },
+        });
+    } else {
+        updateQueixa = await prisma.queixa.update({
+            where: { id: queixaId },
+            data: {
+                estado: dto.estado,
+                descricao: dto.descricao,
+                ficheiro: dto.ficheiro?.buffer ?? undefined,
+            },
+        });
+    }
+
+    logEvent({
+        tipoEvento: TipoEvento.UPDATE,
+        descricao: `Queixa com ID ${queixaId} editada`,
+        entidadeId: queixaId,
+        entidade: "Queixa",
+        funcionarioId: userId,
     });
 
     const { id, ...sanitizedQueixa } = updateQueixa
