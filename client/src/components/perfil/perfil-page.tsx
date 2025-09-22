@@ -365,18 +365,6 @@ export function PerfilPage() {
                 <CheckSquareIcon className="w-6 h-6 text-green-500" />
               </div>
             )}
-
-            <div className="flex justify-between items-center p-4 border rounded-lg">
-              <div>
-                <h4 className="font-medium">Histórico de Login</h4>
-                <p className="text-sm text-muted-foreground">
-                  Visualize suas atividades de login recentes
-                </p>
-              </div>
-              <Button variant="outline">
-                Ver Histórico
-              </Button>
-            </div>
           </div>
         </CardContent>
       </Card>

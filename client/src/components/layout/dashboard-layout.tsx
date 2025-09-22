@@ -34,7 +34,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       { path: "/", label: "Dashboard", icon: Scale, roles: ["Funcionário", "Chefe", "Admin"] },
       { path: "/processos", label: "Processos", icon: FileText, roles: ["Funcionário", "Chefe"] },
       { path: "/documentos", label: "Documentos", icon: FileText, roles: ["Funcionário", "Chefe"] },
-      { path: "/reunioes", label: "Reuniões", icon: Calendar, roles: ["Funcionário", "Chefe"] },
       { path: "/envolvidos", label: "Envolvidos", icon: UserPlus, roles: ["Funcionário", "Chefe"] },
       { path: "/queixas", label: "Queixas", icon: AlertTriangle, roles: ["Funcionário", "Chefe"] },
       { path: "/comissoes", label: "Comissões", icon: Building, roles: ["Funcionário", "Chefe"] },
